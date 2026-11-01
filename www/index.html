@@ -49,18 +49,28 @@ const when=t=>t.status&&t.status.confirmed?new Date(t.status.block_time*1000).to
 function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e}
 function card(title){const c=el("div","card");if(title)c.appendChild(el("h2",null,title));return c}
 function row(l,r,cls){const d=el("div","row");d.appendChild(el("span",null,l));d.appendChild(el("span",cls,r));return d}
-async function get(p){const r=await fetch(API+p);if(!r.ok)throw new Error(r.status);return r.json()}
+async function get(p){
+  const c=new AbortController();const t=setTimeout(()=>c.abort(),12000);
+  try{const r=await fetch(API+p,{signal:c.signal});if(!r.ok)throw new Error("HTTP "+r.status);return await r.json()}
+  finally{clearTimeout(t)}
+}
+function errText(e){return e&&e.name==="AbortError"?"zaman aşımı":(e&&e.message)||"bilinmeyen hata"}
 function show(...nodes){out.innerHTML="";nodes.forEach(n=>out.appendChild(n))}
 function msg(t,err){const c=card();c.appendChild(el("div",err?"err":"muted",t));return c}
 
 async function home(){
+  show(msg("Yükleniyor…"));
   try{
     const f=await get("/v1/fees/recommended");
     const c=card("Güncel ücret tahmini (sat/vB)");
     const g=el("div","grid");
     [["Hızlı",f.fastestFee],["~30 dk",f.halfHourFee],["~1 saat",f.hourFee]].forEach(([n,v])=>{const d=el("div");d.appendChild(el("b",null,v));d.appendChild(el("small",null,n));g.appendChild(d)});
     c.appendChild(g);show(c);
-  }catch(e){show(msg("Ücret bilgisi alınamadı.",true))}
+  }catch(e){
+    const c=msg("Bağlantı kurulamadı ("+errText(e)+").",true);
+    const b=el("button",null,"Tekrar dene");b.style.cssText="margin-top:10px;padding:10px 16px";b.onclick=home;
+    c.appendChild(b);show(c);
+  }
 }
 
 function net(tx,addr){
@@ -127,7 +137,7 @@ async function search(){
     if(/^[0-9a-fA-F]{64}$/.test(q))await tx(q);
     else if(/^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,90}$/.test(q))await address(q);
     else show(msg("Geçerli bir Bitcoin adresi veya 64 karakterlik işlem ID gir.",true));
-  }catch(e){show(msg("Sonuç alınamadı. Adresi kontrol et veya biraz sonra tekrar dene.",true))}
+  }catch(e){show(msg("Sonuç alınamadı ("+errText(e)+"). Adresi kontrol et veya biraz sonra tekrar dene.",true))}
 }
 $("go").onclick=search;
 $("q").addEventListener("keydown",e=>{if(e.key==="Enter")search()});
