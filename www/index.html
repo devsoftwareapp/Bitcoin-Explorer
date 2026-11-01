@@ -11,8 +11,7 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:radial-gradient(1200px 500px at 80% -10%,rgba(166,107,255,.18),transparent 60%),radial-gradient(900px 500px at -10% 0,rgba(247,147,26,.16),transparent 55%),var(--bg);background-attachment:fixed;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);min-height:100vh}
-#bg{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
-main{position:relative;z-index:1;max-width:600px;margin:0 auto;padding:16px 14px 40px}
+main{max-width:600px;margin:0 auto;padding:16px 14px 40px}
 header{display:flex;align-items:center;gap:10px;margin-bottom:14px;cursor:pointer}
 .logo{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#ffb347,#f7931a 60%,#e5740a);display:grid;place-items:center;font-weight:800;font-size:22px;color:#fff;box-shadow:var(--glow)}
 h1{font-size:22px;margin:0;font-weight:800;letter-spacing:-.02em}
@@ -27,7 +26,11 @@ button{font:inherit;border:0;border-radius:16px;background:linear-gradient(135de
 button:active{transform:scale(.97)}
 .back{background:var(--card);color:var(--text);border:1px solid var(--line);padding:10px 16px;margin-bottom:12px;font-weight:600;box-shadow:none}
 .card{background:linear-gradient(160deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:20px;padding:16px;margin-bottom:14px;animation:up .4s both}
-.card{background:linear-gradient(160deg,color-mix(in srgb,var(--card) 66%,transparent),color-mix(in srgb,var(--card2) 66%,transparent));-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px)}
+.fx{background:#0b0d18;border:1px solid var(--line);border-radius:20px;overflow:hidden;margin-bottom:14px;animation:up .4s both}
+.fx canvas{display:block;width:100%;height:230px}
+.fxl{display:flex;gap:14px;align-items:center;padding:10px 14px;font-size:12px;color:#9aa0c3}
+.fxl i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.fxl b{margin-left:auto;font-weight:600;color:#e6e8ff}
 @keyframes up{from{opacity:0;transform:translateY(10px)}}
 .card h2,.lbl{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 12px;font-weight:700}
 .hero{background:linear-gradient(135deg,#f7931a 0%,#e0457b 55%,#7b4dff 100%);border:0;color:#fff;box-shadow:0 10px 34px rgba(224,69,123,.3)}
@@ -68,11 +71,10 @@ svg.chart{width:100%;height:110px;display:block}
 </style>
 </head>
 <body>
-<canvas id="bg" aria-hidden="true"></canvas>
 <main>
   <header id="title"><div class="logo">₿</div><h1>Bitcoin <span>Explorer</span></h1><div class="live"><i class="dot"></i><span id="upd">canlı</span></div></header>
   <div class="search">
-    <input id="q" placeholder="🔍 Adres veya işlem ID yapıştır" autocapitalize="off" autocomplete="off" spellcheck="false">
+    <input id="q" placeholder="Adres veya işlem ID yapıştır" autocapitalize="off" autocomplete="off" spellcheck="false">
     <button id="go">Ara</button>
   </div>
   <div id="out"></div>
@@ -116,97 +118,103 @@ function chart(points){
   return s;
 }
 
-const bg=(()=>{
-try{
-const cv=$("bg"),gl=cv.getContext("webgl2",{antialias:false,alpha:true,premultipliedAlpha:true});
-if(!gl)throw 0;
-const N=250000,dpr=Math.min(devicePixelRatio||1,2),reduce=matchMedia("(prefers-reduced-motion:reduce)").matches;
-const VS=`#version 300 es
+function hsl(h,s,l){h=(((h%360)+360)%360)/360;const f=n=>{const k=(n+h*12)%12,a=s*Math.min(l,1-l);return (l-a*Math.max(-1,Math.min(k-3,9-k,1)))*255};return [f(0),f(8),f(4)]}
+// İşlemi parçacıklarla çizer: girişler (sol) -> hub -> çıkışlar (sağ), üstte ücret
+function txfx(t){
+  const wrap=el("div","fx"),cv=el("canvas"),lg=el("div","fxl");
+  cv.setAttribute("aria-label","İşlem akış görseli");wrap.appendChild(cv);wrap.appendChild(lg);
+  [["Giriş","#ff6b6b"],["Çıkış","#35e0a1"],["Ücret","#f7931a"]].forEach(([n,c])=>{const s=el("span");const d=el("i");d.style.background=c;s.appendChild(d);s.appendChild(document.createTextNode(n));lg.appendChild(s)});
+  lg.appendChild(el("b",null,t.vin.length+" giriş → "+t.vout.length+" çıkış"));
+  let gl=null;try{gl=cv.getContext("webgl2",{antialias:false,alpha:false})}catch(e){}
+  if(!gl){cv.remove();return wrap}
+  try{
+  const N=120000,dpr=Math.min(devicePixelRatio||1,2),reduce=matchMedia("(prefers-reduced-motion:reduce)").matches;
+  const rn=Math.random,gs=()=>(rn()+rn()+rn()-1.5)/.5;
+  // veri
+  const ov=t.vout.map(x=>x.value),tot=ov.reduce((a,b)=>a+b,0);
+  const I=t.vin.map(x=>x.prevout?x.prevout.value:tot/Math.max(1,t.vin.length)).sort((a,b)=>b-a).slice(0,6);
+  const O=ov.slice().sort((a,b)=>b-a).slice(0,8);
+  const sI=I.reduce((a,b)=>a+b,0)||1,sO=O.reduce((a,b)=>a+b,0)||1;
+  const ys=n=>n<2?[0]:Array.from({length:n},(_,i)=>(-.5+i/(n-1))*1.6);
+  const items=[],X=1.3;
+  const node=(c,r,w,h)=>items.push({w,f:o=>{const a=gs(),b=gs(),d=gs(),l=Math.hypot(a,b,d)||1,k=r*(.55+.45*Math.cbrt(rn()))/l;o.x=c[0]+a*k;o.y=c[1]+b*k;o.z=d*k;o.c=hsl(h,.8,.55+.2*rn());o.a=0}});
+  const stream=(a,b,w,sp,h0,h1)=>{const mx=(a[0]+b[0])/2;items.push({w,f:o=>{const u=rn(),m=1-u,s=3*m*m*u,v=3*m*u*u;
+    o.x=m*m*m*a[0]+s*mx+v*mx+u*u*u*b[0]+gs()*sp*.3;o.y=m*m*m*a[1]+s*a[1]+v*b[1]+u*u*u*b[1]+gs()*sp;o.z=gs()*sp*1.6;
+    o.c=hsl(h0+(h1-h0)*u,.85,.6);o.a=.02+u*.97}})};
+  const yI=ys(I.length),yO=ys(O.length);
+  I.forEach((v,i)=>{const sh=v/sI,c=[-X,yI[i],0];node(c,.1+.28*Math.cbrt(sh),.14*sh,355);stream(c,[0,0,0],.22*sh,.012+.03*Math.cbrt(sh),355,50)});
+  node([0,0,0],.12,.07,45);
+  O.forEach((v,i)=>{const sh=v/sO,c=[X,yO[i],0];node(c,.1+.28*Math.cbrt(sh),.14*sh,155);stream([0,0,0],c,.22*sh,.012+.03*Math.cbrt(sh),50,155)});
+  const fr=.07+.09*Math.min(1,t.fee/sI*50);
+  node([0,.95,0],fr,.03,32);stream([0,0,0],[0,.95,0],.03,.014,45,32);
+  items.push({w:.06,f:o=>{o.x=(rn()*2-1)*1.75;o.y=(rn()*2-1)*1.1;o.z=(rn()*2-1)*.5;o.c=[40,46,80];o.a=0}});
+  const cum=[];let tw=0;items.forEach(it=>cum.push(tw+=it.w));
+  const pick=()=>{const r=rn()*tw;let lo=0,hi=cum.length-1;while(lo<hi){const m=(lo+hi)>>1;if(cum[m]<r)lo=m+1;else hi=m}return items[lo]};
+  const gen=f=>{const pos=new Float32Array(N*3),col=new Uint8Array(N*4),o={};
+    for(let i=0;i<N;i++){(f||pick().f)(o);const q=i*3,c=i*4;pos[q]=o.x;pos[q+1]=o.y;pos[q+2]=o.z;col[c]=o.c[0];col[c+1]=o.c[1];col[c+2]=o.c[2];col[c+3]=Math.round((o.a||0)*255)}
+    return [pos,col]};
+  // shader
+  const VS=`#version 300 es
 precision highp float;
 layout(location=0) in vec3 A;layout(location=1) in vec3 B;layout(location=2) in vec4 CA;layout(location=3) in vec4 CB;layout(location=4) in vec4 R;
-uniform float uAsp,uM,uS,uRy,uRx;
+uniform float uAsp,uM,uT,uS,uRy;
 out vec3 vC;
 void main(){
  float s=R.x;float p=clamp((uM-s*.35)/.65,0.,1.);p=p*p*(3.-2.*p);
- vec3 q=mix(A,B,p);q+=sin(p*3.14159)*(R.yzw-.5)*1.6;
- float cy=cos(uRy),sy=sin(uRy),cx=cos(uRx),sx=sin(uRx);
+ vec3 q=mix(A,B,p);q+=sin(p*3.14159)*(R.yzw-.5)*1.2;
+ float cy=cos(uRy),sy=sin(uRy),cx=.985,sx=.17;
  q=vec3(cy*q.x+sy*q.z,q.y,-sy*q.x+cy*q.z);
  q=vec3(q.x,cx*q.y-sx*q.z,sx*q.y+cx*q.z);
  float k=3./(3.-q.z);
- vec2 sc=uAsp>1.?vec2(1./uAsp,1.):vec2(1.,uAsp);
- gl_Position=vec4(q.xy*k*.62*sc+vec2(0.,.12),0.,1.);
+ gl_Position=vec4(q.x/1.75*k,q.y*uAsp/1.75*k,0.,1.);
  vec4 cc=p<.5?CA:CB;
- vC=cc.rgb*(.55+.45*clamp(q.z*.5+.5,0.,1.))*(.9+.2*fract(s*91.7));
+ float ph=CB.a;
+ float w=ph>.01?.4+1.1*pow(.5+.5*sin(ph*18.85-uT*3.),2.):1.;
+ vC=cc.rgb*(.6+.4*clamp(q.z*.5+.5,0.,1.))*mix(1.,w,p)*(.9+.2*fract(s*91.7));
  gl_PointSize=uS*k;
 }`;
-const FS=`#version 300 es
-precision mediump float;in vec3 vC;out vec4 o;void main(){vec2 d=gl_PointCoord-.5;float r=dot(d,d)*4.;if(r>1.)discard;float a=.6*(1.-.5*r);o=vec4(vC*a,a);}`;
-const sh=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw gl.getShaderInfoLog(o);return o};
-const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,VS));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(pr);gl.useProgram(pr);
-const U={};["uAsp","uM","uS","uRy","uRx"].forEach(n=>U[n]=gl.getUniformLocation(pr,n));
-gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);gl.clearColor(0,0,0,0);
-
-const rn=Math.random,TAU=Math.PI*2,gs=()=>(rn()+rn()+rn()-1.5)/.5;
-function hsl(h,s,l){h=(((h%360)+360)%360)/360;const f=n=>{const k=(n+h*12)%12,a=s*Math.min(l,1-l);return (l-a*Math.max(-1,Math.min(k-3,9-k,1)))*255};return [f(0),f(8),f(4)]}
-const W={};
-function pw(t,mw,mh){const c=document.createElement("canvas"),w=960,h=300;c.width=w;c.height=h;const x=c.getContext("2d",{willReadFrequently:true});
- let fs=220;x.font="800 "+fs+"px system-ui,sans-serif";fs=Math.min(220,fs*880/x.measureText(t).width);x.font="800 "+fs+"px system-ui,sans-serif";x.textAlign="center";x.textBaseline="middle";x.fillStyle="#fff";x.fillText(t,w/2,h/2);
- const d=x.getImageData(0,0,w,h).data,a=[];let x0=w,x1=0,y0=h,y1=0;
- for(let i=0;i<w*h;i++)if(d[i*4+3]>128){a.push(i);const px=i%w,py=(i/w)|0;if(px<x0)x0=px;if(px>x1)x1=px;if(py<y0)y0=py;if(py>y1)y1=py}
- if(!a.length){a.push(w*h/2);x0=x1=w/2;y0=y1=h/2}
- return{a,w,cx:(x0+x1)/2,cy:(y0+y1)/2,s:Math.min(mw/(x1-x0+1),mh/(y1-y0+1))}}
-function wp(q,o){const k=q.a[(rn()*q.a.length)|0],px=k%q.w+rn(),py=((k/q.w)|0)+rn();o.x=(px-q.cx)*q.s;o.y=(q.cy-py)*q.s}
-const S={
- noise:o=>{o.x=(rn()*2-1)*1.8;o.y=(rn()*2-1)*1.8;o.z=(rn()*2-1)*1.8;o.c=hsl(20+rn()*40,.8,.55)},
- coin:o=>{const r=rn();
-  if(r<.12){const a=rn()*TAU;o.x=Math.cos(a)*1.05;o.y=Math.sin(a)*1.05;o.z=(rn()*2-1)*.09;o.c=hsl(30,.9,.4)}
-  else if(r<.62){const a=rn()*TAU,d=Math.sqrt(rn());o.x=Math.cos(a)*d;o.y=Math.sin(a)*d;o.z=rn()<.5?-.09:.09;o.c=d>.86?hsl(32,.95,.5):hsl(38,.9,.48)}
-  else{wp(W.B||(W.B=pw("B",.95,1.15)),o);o.z=rn()<.5?-.14:.14;o.c=hsl(46,.95,.78)}},
- btc:o=>{wp(W.btc||(W.btc=pw("BTC",2.3,1)),o);o.z=gs()*.07;o.c=hsl(25+(o.x+1.2)*25,.9,.58)},
- sphere:o=>{const x=gs(),y=gs(),z=gs(),l=Math.hypot(x,y,z)||1;o.x=x/l*1.05;o.y=y/l*1.05;o.z=z/l*1.05;o.c=hsl(190+(o.y+1)*35,.8,.5)},
- torus:o=>{const u=rn()*TAU,v=rn()*TAU,R=.78,r=.3;o.x=(R+r*Math.cos(v))*Math.cos(u);o.z=(R+r*Math.cos(v))*Math.sin(u);o.y=r*Math.sin(v);o.c=hsl(255+u/TAU*110,.8,.55+.1*Math.sin(v))},
- cube:o=>{const a=(rn()*2-1)*.85,b=(rn()*2-1)*.85,f=(rn()*6)|0,w=f%2?.85:-.85;
-  if(f<2){o.x=w;o.y=a;o.z=b}else if(f<4){o.x=a;o.y=w;o.z=b}else{o.x=a;o.y=b;o.z=w}
-  o.c=hsl(28+(o.x+o.y+o.z)*14,.9,.55+.08*o.y)},
- knot:o=>{const t=rn()*TAU;o.x=(Math.sin(t)+2*Math.sin(2*t))/3.1+gs()*.08;o.y=(Math.cos(t)-2*Math.cos(2*t))/3.1+gs()*.08;o.z=-Math.sin(3*t)/2.2+gs()*.08;o.c=hsl(140+t/TAU*120,.75,.58)},
- galaxy:o=>{const arm=(rn()*3)|0,r=Math.pow(rn(),.7)*1.4,a=r*2.6+arm*2.0944+gs()*.2*(.4+r*.4),q=r/1.4;
-  o.x=Math.cos(a)*r;o.z=Math.sin(a)*r;o.y=gs()*.05*(1.5-r);o.c=hsl(35+q*200,.8,.78-.32*q)}
-};
-function gen(n){const pos=new Float32Array(N*3),col=new Uint8Array(N*4),o={},f=S[n];
- for(let i=0;i<N;i++){f(o);const q=i*3,c=i*4;pos[q]=o.x;pos[q+1]=o.y;pos[q+2]=o.z;col[c]=o.c[0];col[c+1]=o.c[1];col[c+2]=o.c[2];col[c+3]=255}
- return [pos,col]}
-const pb=[gl.createBuffer(),gl.createBuffer()],cb=[gl.createBuffer(),gl.createBuffer()],rb=gl.createBuffer();
-{const a=new Uint8Array(N*4);for(let i=0;i<a.length;i+=65536)crypto.getRandomValues(a.subarray(i,Math.min(a.length,i+65536)));gl.bindBuffer(gl.ARRAY_BUFFER,rb);gl.bufferData(gl.ARRAY_BUFFER,a,gl.STATIC_DRAW)}
-const up=(i,d)=>{gl.bindBuffer(gl.ARRAY_BUFFER,pb[i]);gl.bufferData(gl.ARRAY_BUFFER,d[0],gl.STATIC_DRAW);gl.bindBuffer(gl.ARRAY_BUFFER,cb[i]);gl.bufferData(gl.ARRAY_BUFFER,d[1],gl.STATIC_DRAW)};
-{const d=gen("noise");up(0,d);up(1,d)}
-let from=0,to=1,tm=1,cur="noise",pend=null,ry=0,last=performance.now(),drawN=N,fps=60,low=0,lastKey="",hi=-1;
-function load(n){if(tm<1){pend=n;return}cur=n;const d=gen(n);from=to;to=1-to;up(to,d);tm=reduce?1:0}
-const HOME=["coin","btc","galaxy"],MAP={block:"cube",tx:"knot",address:"torus",err:"sphere"};
-function set(key){let n;if(key==="home"){if(lastKey!=="home")hi=(hi+1)%HOME.length;n=HOME[hi]}else n=MAP[key]||"sphere";lastKey=key;if(n===cur&&!pend)return;load(n)}
-function resize(){cv.width=Math.round(innerWidth*dpr);cv.height=Math.round(innerHeight*dpr)}
-resize();addEventListener("resize",resize);
-function draw(){
- gl.viewport(0,0,cv.width,cv.height);gl.clear(gl.COLOR_BUFFER_BIT);
- gl.uniform1f(U.uAsp,cv.width/cv.height);gl.uniform1f(U.uM,tm);gl.uniform1f(U.uS,dpr*1.7*Math.sqrt(N/drawN));gl.uniform1f(U.uRy,ry);gl.uniform1f(U.uRx,.25);
- gl.bindBuffer(gl.ARRAY_BUFFER,pb[from]);gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,3,gl.FLOAT,false,12,0);
- gl.bindBuffer(gl.ARRAY_BUFFER,pb[to]);gl.enableVertexAttribArray(1);gl.vertexAttribPointer(1,3,gl.FLOAT,false,12,0);
- gl.bindBuffer(gl.ARRAY_BUFFER,cb[from]);gl.enableVertexAttribArray(2);gl.vertexAttribPointer(2,4,gl.UNSIGNED_BYTE,true,4,0);
- gl.bindBuffer(gl.ARRAY_BUFFER,cb[to]);gl.enableVertexAttribArray(3);gl.vertexAttribPointer(3,4,gl.UNSIGNED_BYTE,true,4,0);
- gl.bindBuffer(gl.ARRAY_BUFFER,rb);gl.enableVertexAttribArray(4);gl.vertexAttribPointer(4,4,gl.UNSIGNED_BYTE,true,4,0);
- gl.drawArrays(gl.POINTS,0,drawN)}
-function frame(now){
- const dt=Math.min(.05,(now-last)/1000);last=now;fps+=(1/Math.max(dt,.001)-fps)*.05;
- if(tm>=1){low=fps<28?low+dt:0;if(low>3&&drawN>80000){low=0;drawN=Math.round(drawN*.7)}}
- if(tm<1)tm=Math.min(1,tm+dt/1.8);else if(pend){const p=pend;pend=null;load(p)}
- if(!reduce)ry+=dt*.28;
- draw();requestAnimationFrame(frame)}
-requestAnimationFrame(frame);
-return{set};
-}catch(e){const c=$("bg");if(c)c.remove();return{set(){}}}
-})();
+  const FS=`#version 300 es
+precision mediump float;in vec3 vC;out vec4 o;void main(){vec2 d=gl_PointCoord-.5;float r=dot(d,d)*4.;if(r>1.)discard;o=vec4(vC*(1.-.55*r)*.5,1.);}`;
+  const sh=(ty,s)=>{const o=gl.createShader(ty);gl.shaderSource(o,s);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw gl.getShaderInfoLog(o);return o};
+  const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,VS));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(pr);gl.useProgram(pr);
+  const U={};["uAsp","uM","uT","uS","uRy"].forEach(n=>U[n]=gl.getUniformLocation(pr,n));
+  gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE);gl.clearColor(.043,.05,.094,1);
+  const mkb=d=>{const p=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,p);gl.bufferData(gl.ARRAY_BUFFER,d,gl.STATIC_DRAW);return p};
+  const nz=gen(o=>{o.x=(rn()*2-1)*1.9;o.y=(rn()*2-1)*1.2;o.z=(rn()*2-1)*.9;o.c=[60,66,110];o.a=0}),fin=gen();
+  const bufs=[mkb(nz[0]),mkb(fin[0])],cols=[mkb(nz[1]),mkb(fin[1])];
+  const ra=new Uint8Array(N*4);for(let i=0;i<ra.length;i+=65536)crypto.getRandomValues(ra.subarray(i,Math.min(ra.length,i+65536)));
+  const rb=mkb(ra);
+  const at=(i,b,n,ty,nm)=>{gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.enableVertexAttribArray(i);gl.vertexAttribPointer(i,n,ty,nm,0,0)};
+  // sürükle: yatay döndür
+  let dry=0,drag=false,lx=0;cv.style.touchAction="pan-y";
+  cv.onpointerdown=e=>{drag=true;lx=e.clientX;try{cv.setPointerCapture(e.pointerId)}catch(_){}};
+  cv.onpointermove=e=>{if(drag){dry=Math.max(-.9,Math.min(.9,dry+(e.clientX-lx)*.008));lx=e.clientX}};
+  cv.onpointerup=cv.onpointercancel=()=>{drag=false};
+  let tm=reduce?1:0,t0=0,last=performance.now(),seen=false,miss=0,drawN=N,fps=60,low=0;
+  function dispose(){const e=gl.getExtension("WEBGL_lose_context");if(e)e.loseContext()}
+  function frame(now){
+    if(!cv.isConnected){if(seen||++miss>120){dispose();return}requestAnimationFrame(frame);return}
+    seen=true;
+    const dt=Math.min(.05,(now-last)/1000);last=now;t0+=dt;
+    fps+=(1/Math.max(dt,.001)-fps)*.05;if(tm>=1){low=fps<28?low+dt:0;if(low>3&&drawN>40000){low=0;drawN=Math.round(drawN*.7)}}
+    tm=Math.min(1,tm+dt/1.6);
+    const w=Math.round(cv.clientWidth*dpr),h=Math.round(cv.clientHeight*dpr);
+    if(w&&h&&(cv.width!==w||cv.height!==h)){cv.width=w;cv.height=h}
+    if(!drag)dry*=1-Math.min(1,dt*2.5);
+    gl.viewport(0,0,cv.width,cv.height);gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.uniform1f(U.uAsp,cv.width/Math.max(1,cv.height));gl.uniform1f(U.uM,tm);gl.uniform1f(U.uT,reduce?0:t0);
+    gl.uniform1f(U.uS,dpr*2*Math.sqrt(N/drawN));gl.uniform1f(U.uRy,(reduce?0:.28*Math.sin(t0*.5))+dry);
+    at(0,bufs[0],3,gl.FLOAT,false);at(1,bufs[1],3,gl.FLOAT,false);at(2,cols[0],4,gl.UNSIGNED_BYTE,true);at(3,cols[1],4,gl.UNSIGNED_BYTE,true);at(4,rb,4,gl.UNSIGNED_BYTE,true);
+    gl.drawArrays(gl.POINTS,0,drawN);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  }catch(e){cv.remove()}
+  return wrap;
+}
 
 async function home(force){
-  view="home";bg.set("home");
+  view="home";
   if(force||!out.firstChild)skeleton();
   const keys=["fees","blocks","mempool","recent","diff","price","mblocks","hash"];
   const urls=["/v1/fees/recommended","/v1/blocks","/mempool","/mempool/recent","/v1/difficulty-adjustment","/v1/prices","/v1/fees/mempool-blocks","/v1/mining/hashrate/3m"];
@@ -243,16 +251,16 @@ async function home(force){
   // Ücretler
   const fcard=card("Ücret tahmini (sat/vB)");const g=el("div","grid");
   const f=d.fees||{};
-  [["🚀","Hızlı",f.fastestFee],["⏱️","~30 dk",f.halfHourFee],["🐢","~1 saat",f.hourFee]].forEach(([e,n,v])=>{
+  [["Hızlı",f.fastestFee],["~30 dk",f.halfHourFee],["~1 saat",f.hourFee]].forEach(([n,v])=>{
     const x=el("div","tile");x.style.background=fc(v);
-    x.appendChild(el("i",null,e));x.appendChild(el("b",null,v!=null?v:"—"));x.appendChild(el("small",null,n));g.appendChild(x)});
+x.appendChild(el("b",null,v!=null?v:"—"));x.appendChild(el("small",null,n));g.appendChild(x)});
   fcard.appendChild(g);
   if(d.mempool){fcard.appendChild(row("Bekleyen işlem",nf(d.mempool.count)));fcard.appendChild(row("Mempool boyutu",(d.mempool.vsize/1e6).toFixed(2)+" MvB"))}
   nodes.push(fcard);
 
   // Mempool harita
   if(d.mblocks&&d.mblocks.length){
-    const mc=card("🗺️ Mempool haritası — sıradaki bloklar");const sc=el("div","scroll");
+    const mc=card("Mempool — sıradaki bloklar");const sc=el("div","scroll");
     d.mblocks.slice(0,8).forEach((b,i)=>{
       const k=el("div","cube");k.style.background=fc(b.medianFee);
       k.appendChild(el("b",null,"~"+Math.round(b.medianFee)+" sat/vB"));
@@ -266,7 +274,7 @@ async function home(force){
 
   // Son bloklar
   if(d.blocks){
-    const bc=card("⛏️ Son bloklar");const sc=el("div","scroll");
+    const bc=card("Son bloklar");const sc=el("div","scroll");
     d.blocks.slice(0,12).forEach(b=>{
       const ex=b.extras||{},fill=Math.min(100,(b.weight||b.size*4)/4e4);
       const k=el("div","cube blk");k.style.background="linear-gradient(to top,"+fc(ex.medianFee)+" "+fill+"%,rgba(127,127,160,.28) "+fill+"%)";
@@ -283,7 +291,7 @@ async function home(force){
     // Pool dağılımı
     const cnt={};d.blocks.forEach(b=>{const n=(b.extras&&b.extras.pool&&b.extras.pool.name)||"Bilinmiyor";cnt[n]=(cnt[n]||0)+1});
     const ent=Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
-    const pc=card("🏊 Madencilik havuzları (son "+d.blocks.length+" blok)");
+    const pc=card("Madencilik havuzları (son "+d.blocks.length+" blok)");
     const st=el("div","stack");
     ent.forEach(([n,c],i)=>{const s=el("div");s.style.cssText="flex:"+c+";background:"+PAL[Math.min(i,PAL.length-1)];st.appendChild(s)});
     pc.appendChild(st);
@@ -294,14 +302,14 @@ async function home(force){
 
   // Hashrate
   if(d.hash&&d.hash.hashrates&&d.hash.hashrates.length>2){
-    const hc=card("📈 Hashrate (3 ay)");
+    const hc=card("Hashrate (3 ay)");
     hc.appendChild(el("div","big",nf(d.hash.currentHashrate/1e18,0)+" EH/s"));
     hc.appendChild(chart(d.hash.hashrates.map(x=>x.avgHashrate)));nodes.push(hc);
   }
 
   // Zorluk + halving
   if(d.diff||b0){
-    const dc=card("⚙️ Zorluk ayarlaması");
+    const dc=card("Zorluk ayarlaması");
     if(d.diff){const df=d.diff;
       const bar=el("div","bar");const i=el("i");i.style.width=Math.min(100,df.progressPercent)+"%";bar.appendChild(i);dc.appendChild(bar);
       dc.appendChild(row("İlerleme","%"+df.progressPercent.toFixed(1)));
@@ -309,7 +317,7 @@ async function home(force){
       dc.appendChild(row("Tahmini değişim",(df.difficultyChange>=0?"+":"")+df.difficultyChange.toFixed(2)+"%",df.difficultyChange>=0?"in":"out"));
       dc.appendChild(row("Tahmini tarih",new Date(df.estimatedRetargetDate).toLocaleDateString("tr-TR",{day:"numeric",month:"long"})))}
     if(b0){const rem=1050000-b0.height,days=rem*10/1440;
-      const hv=card("⏳ Sonraki halving");
+      const hv=card("Sonraki halving");
       const hb=el("div","bar");const hi=el("i");hi.style.width=((b0.height-840000)/2100)+"%";hb.appendChild(hi);hv.appendChild(hb);
       hv.appendChild(row("Kalan blok",nf(rem)));
       hv.appendChild(row("Tahmini süre","≈ "+nf(days/365,1)+" yıl ("+nf(days)+" gün)"));
@@ -319,7 +327,7 @@ async function home(force){
 
   // Son işlemler
   if(d.recent){
-    const rc=card("⚡ Son işlemler");
+    const rc=card("Son işlemler");
     d.recent.slice(0,10).forEach(t=>{
       const a=el("a","tx");a.href="#";a.onclick=e=>{e.preventDefault();$("q").value=t.txid;search()};
       const r=el("div","row");const lf=el("div");
@@ -343,7 +351,7 @@ function txItem(tx,addr){
   const a=el("a","tx");a.href="#";
   a.onclick=e=>{e.preventDefault();$("q").value=tx.txid;search()};
   const w=el("div"),top=el("div","row");
-  if(addr){const n=net(tx,addr);top.appendChild(el("span",n>=0?"in":"out",(n>=0?"▲ +":"▼ ")+btc(n)+" BTC"))}
+  if(addr){const n=net(tx,addr);top.appendChild(el("span",n>=0?"in":"out",(n>=0?"+":"−")+btc(n)+" BTC"))}
   else top.appendChild(el("span",null,btc(tx.vout.reduce((s,o)=>s+o.value,0))+" BTC"));
   top.appendChild(el("span","muted",when(tx)));
   w.appendChild(top);w.appendChild(el("div","mono",tx.txid));
@@ -351,7 +359,7 @@ function txItem(tx,addr){
 }
 
 async function block(id){
-  view="detail";bg.set("block");skeleton();
+  view="detail";skeleton();
   try{
     const [b,txs]=await Promise.all([get("/block/"+id),get("/block/"+id+"/txs")]);
     const ex=b.extras||{};
@@ -372,7 +380,6 @@ async function block(id){
 }
 
 async function address(a){
-  bg.set("address");
   const [info,txs]=await Promise.all([get("/address/"+a),get("/address/"+a+"/txs")]);
   const cs=info.chain_stats,ms=info.mempool_stats;
   const bal=cs.funded_txo_sum-cs.spent_txo_sum;
@@ -391,13 +398,12 @@ async function address(a){
 }
 
 async function tx(id){
-  bg.set("tx");
   const t=await get("/tx/"+id);
   const total=t.vout.reduce((s,o)=>s+o.value,0);
   const rate=t.fee/(t.weight?t.weight/4:t.size);
   const c=card("İşlem");
   c.appendChild(el("div","mono",id));
-  const st=row("Durum",t.status.confirmed?"✅ Onaylandı (blok "+t.status.block_height+")":"⏳ Onay bekliyor",t.status.confirmed?"in":"out");
+  const st=row("Durum",t.status.confirmed?"Onaylandı (blok "+t.status.block_height+")":"Onay bekliyor",t.status.confirmed?"in":"out");
   c.appendChild(st);
   c.appendChild(row("Zaman",when(t)));
   c.appendChild(row("Toplam çıkış",btc(total)+" BTC"));
@@ -405,20 +411,20 @@ async function tx(id){
   const fw=el("span");fw.appendChild(document.createTextNode(nf(t.fee)+" sat "));fw.appendChild(tag(rate.toFixed(1)+" sat/vB",fc(rate)));fr.appendChild(fw);c.appendChild(fr);
   c.appendChild(row("Giriş / çıkış",t.vin.length+" / "+t.vout.length));
   c.appendChild(row("Boyut",t.size+" bayt"));
-  const ins=card("⬇️ Girişler");
+  const ins=card("Girişler");
   t.vin.slice(0,20).forEach(x=>{
     const d=el("div","row");
     d.appendChild(el("span","mono",x.is_coinbase?"Coinbase (yeni basılan)":(x.prevout&&x.prevout.scriptpubkey_address)||"(adres yok)"));
     if(x.prevout)d.appendChild(el("span","out","−"+btc(x.prevout.value)));
     ins.appendChild(d)});
-  const o=card("⬆️ Çıkışlar");
+  const o=card("Çıkışlar");
   t.vout.slice(0,30).forEach(x=>{
     const d=el("div","row");
     d.appendChild(el("span","mono",x.scriptpubkey_address||"(adres yok)"));
     d.appendChild(el("span","in","+"+btc(x.value)));
     o.appendChild(d);
   });
-  withBack(c,ins,o);
+  withBack(txfx(t),c,ins,o);
 }
 
 async function search(){
