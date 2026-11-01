@@ -1,0 +1,8 @@
+{
+  "appId": "com.devsoftware.bitcoinexplorer",
+  "appName": "Bitcoin Explorer",
+  "webDir": "www",
+  "plugins": {
+    "CapacitorHttp": { "enabled": true }
+  }
+}

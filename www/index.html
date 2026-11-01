@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bitcoin Explorer</title>
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--text:#1f2328;--muted:#6b7280;--line:#e5e3dc;--accent:#f7931a;--in:#2f6f5e;--out:#b42318;
+padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root{--bg:#15171a;--card:#1f2226;--text:#ececec;--muted:#9aa0a6;--line:#2f343a;--in:#5fb89f;--out:#f08a80}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+main{max-width:560px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:24px;margin:0 0 14px}
+h1 span{color:var(--accent)}
+.search{display:flex;gap:8px;margin-bottom:14px}
+input{flex:1;min-width:0;padding:13px 14px;font-size:15px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--text)}
+button{font:inherit;border:0;border-radius:12px;background:var(--accent);color:#1a1200;font-weight:600;padding:0 18px;cursor:pointer}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.card h2{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0 0 10px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.grid b{display:block;font-size:20px}
+.grid small{color:var(--muted);font-size:12px}
+.big{font-size:26px;font-weight:700}
+.row{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:14px}
+.row:first-of-type{border-top:0}
+.mono{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--muted);word-break:break-all}
+.in{color:var(--in);font-weight:600}.out{color:var(--out);font-weight:600}
+.err{color:var(--out)}
+.muted{color:var(--muted);font-size:13px}
+a.tx{color:inherit;text-decoration:none;display:block}
+</style>
+</head>
+<body>
+<main>
+  <h1>Bitcoin <span>Explorer</span></h1>
+  <div class="search">
+    <input id="q" placeholder="Adres veya işlem ID yapıştır" autocapitalize="off" autocomplete="off" spellcheck="false">
+    <button id="go">Ara</button>
+  </div>
+  <div id="out"></div>
+</main>
+<script>
+const API="https://mempool.space/api";
+const $=id=>document.getElementById(id);
+const out=$("out");
+const btc=s=>(s/1e8).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:8});
+const when=t=>t.status&&t.status.confirmed?new Date(t.status.block_time*1000).toLocaleString("tr-TR"):"Onay bekliyor";
+function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e}
+function card(title){const c=el("div","card");if(title)c.appendChild(el("h2",null,title));return c}
+function row(l,r,cls){const d=el("div","row");d.appendChild(el("span",null,l));d.appendChild(el("span",cls,r));return d}
+async function get(p){const r=await fetch(API+p);if(!r.ok)throw new Error(r.status);return r.json()}
+function show(...nodes){out.innerHTML="";nodes.forEach(n=>out.appendChild(n))}
+function msg(t,err){const c=card();c.appendChild(el("div",err?"err":"muted",t));return c}
+
+async function home(){
+  try{
+    const f=await get("/v1/fees/recommended");
+    const c=card("Güncel ücret tahmini (sat/vB)");
+    const g=el("div","grid");
+    [["Hızlı",f.fastestFee],["~30 dk",f.halfHourFee],["~1 saat",f.hourFee]].forEach(([n,v])=>{const d=el("div");d.appendChild(el("b",null,v));d.appendChild(el("small",null,n));g.appendChild(d)});
+    c.appendChild(g);show(c);
+  }catch(e){show(msg("Ücret bilgisi alınamadı.",true))}
+}
+
+function net(tx,addr){
+  let v=0;
+  tx.vout.forEach(o=>{if(o.scriptpubkey_address===addr)v+=o.value});
+  tx.vin.forEach(i=>{if(i.prevout&&i.prevout.scriptpubkey_address===addr)v-=i.prevout.value});
+  return v;
+}
+function txItem(tx,addr){
+  const a=el("a","tx");a.href="#";
+  a.onclick=e=>{e.preventDefault();$("q").value=tx.txid;search()};
+  const w=el("div");
+  const top=el("div","row");
+  if(addr){const n=net(tx,addr);top.appendChild(el("span",n>=0?"in":"out",(n>=0?"+":"")+btc(n)+" BTC"))}
+  else top.appendChild(el("span",null,"İşlem"));
+  top.appendChild(el("span","muted",when(tx)));
+  w.appendChild(top);w.appendChild(el("div","mono",tx.txid));
+  a.appendChild(w);return a;
+}
+
+async function address(a){
+  const [info,txs]=await Promise.all([get("/address/"+a),get("/address/"+a+"/txs")]);
+  const cs=info.chain_stats,ms=info.mempool_stats;
+  const bal=cs.funded_txo_sum-cs.spent_txo_sum;
+  const c1=card("Adres");
+  c1.appendChild(el("div","mono",a));
+  c1.appendChild(el("div","big",btc(bal)+" BTC"));
+  c1.appendChild(row("İşlem sayısı",String(cs.tx_count+ms.tx_count)));
+  c1.appendChild(row("Toplam alınan",btc(cs.funded_txo_sum)+" BTC"));
+  c1.appendChild(row("Toplam gönderilen",btc(cs.spent_txo_sum)+" BTC"));
+  if(ms.tx_count)c1.appendChild(row("Onay bekleyen",ms.tx_count+" işlem"));
+  const c2=card("Son işlemler");
+  if(!txs.length)c2.appendChild(el("div","muted","İşlem yok."));
+  txs.slice(0,25).forEach(t=>c2.appendChild(txItem(t,a)));
+  show(c1,c2);
+}
+
+async function tx(id){
+  const t=await get("/tx/"+id);
+  const total=t.vout.reduce((s,o)=>s+o.value,0);
+  const c=card("İşlem");
+  c.appendChild(el("div","mono",id));
+  c.appendChild(row("Durum",t.status.confirmed?"Onaylandı (blok "+t.status.block_height+")":"Onay bekliyor",t.status.confirmed?"in":"out"));
+  c.appendChild(row("Zaman",when(t)));
+  c.appendChild(row("Toplam çıkış",btc(total)+" BTC"));
+  c.appendChild(row("Ücret",t.fee+" sat"));
+  c.appendChild(row("Giriş / çıkış",t.vin.length+" / "+t.vout.length));
+  c.appendChild(row("Boyut",t.size+" bayt"));
+  const o=card("Çıkışlar");
+  t.vout.forEach(x=>{
+    const d=el("div","row");
+    d.appendChild(el("span","mono",x.scriptpubkey_address||"(adres yok)"));
+    d.appendChild(el("span",null,btc(x.value)));
+    o.appendChild(d);
+  });
+  show(c,o);
+}
+
+async function search(){
+  const q=$("q").value.trim();
+  if(!q){home();return}
+  show(msg("Aranıyor…"));
+  try{
+    if(/^[0-9a-fA-F]{64}$/.test(q))await tx(q);
+    else if(/^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,90}$/.test(q))await address(q);
+    else show(msg("Geçerli bir Bitcoin adresi veya 64 karakterlik işlem ID gir.",true));
+  }catch(e){show(msg("Sonuç alınamadı. Adresi kontrol et veya biraz sonra tekrar dene.",true))}
+}
+$("go").onclick=search;
+$("q").addEventListener("keydown",e=>{if(e.key==="Enter")search()});
+home();
+</script>
+</body>
+</html>
