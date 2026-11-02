@@ -134,9 +134,9 @@ const out=$("out");
 let view="home",lastTs=0;
 function load(k,d){try{const v=localStorage.getItem("bx_"+k);return v?JSON.parse(v):d}catch(_){return d}}
 function save(k,v){try{localStorage.setItem("bx_"+k,JSON.stringify(v))}catch(_){}}
-const CFG=Object.assign({unit:"btc",cur:"USD",theme:"system"},load("cfg",{}));
+const CFG=Object.assign({unit:"btc",theme:"system"},load("cfg",{}));
 const FAV=load("fav",[]),REC=load("rec",[]),TRK=load("trk",[]);
-let PRICE=null;const SYM={USD:"$",EUR:"€",GBP:"£"};
+let PRICE=null;// fiyat: mempool.space USD fiyatı, USDT olarak gösterilir
 function applyTheme(){const r=document.documentElement;CFG.theme==="system"?r.removeAttribute("data-theme"):r.setAttribute("data-theme",CFG.theme)}
 applyTheme();
 
@@ -351,10 +351,9 @@ function settings(){
   const clr=el("button","more","Yerel verileri sil (favori, geçmiş, takip)");clr.type="button";
   clr.onclick=()=>{FAV.length=REC.length=TRK.length=0;["fav","rec","trk"].forEach(k=>save(k,[]));toast("Silindi");if(view==="home")home()};
   openSheet("Ayarlar",grp("Tema",[["system","Sistem"],["light","Açık"],["dark","Koyu"]],"theme",applyTheme),
-    grp("Para birimi",[["USD","USD"],["EUR","EUR"],["GBP","GBP"]],"cur",()=>route()),
     grp("Tutar birimi",[["btc","BTC"],["sat","sat"]],"unit",()=>route()),clr,info)}
 // tutar + fiat
-const fiat=s=>{const p=PRICE&&PRICE[CFG.cur];return p?SYM[CFG.cur]+(s/1e8*p).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2}):""};
+const fiat=s=>{const p=PRICE&&PRICE.USD;return p?(s/1e8*p).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2})+" USDT":""};
 function amtRow(label,sats,cls){const r=el("div","row");r.appendChild(el("span",null,label));const v=el("span","rt");v.appendChild(el("span",cls,btc(sats)+U()));const f=fiat(sats);if(f)v.appendChild(el("small","fi","≈ "+f));r.appendChild(v);return r}
 async function ensurePrice(){if(!PRICE)try{PRICE=await get("/v1/prices")}catch(_){}}
 // adres doğrulama (bech32/bech32m + base58check sağlama toplamı)
@@ -449,12 +448,11 @@ async function home(force){
   const sp=el("span",null,b0?ago(b0.timestamp):"—");sp.id="since";s.appendChild(sp);l.appendChild(s);
   if(b0)lastTs=b0.timestamp;
   top.appendChild(l);
-  const p=el("div","price");p.appendChild(el("div","lbl","BTC / "+CFG.cur));
-  p.appendChild(el("div",null,d.price?SYM[CFG.cur]+nf(d.price[CFG.cur]):"—"));top.appendChild(p);
+  const p=el("div","price");p.appendChild(el("div","lbl","BTC / USDT"));
+  p.appendChild(el("div",null,d.price?nf(d.price.USD)+" USDT":"—"));top.appendChild(p);
   hero.appendChild(top);
   if(d.price){const ch=el("div","chips");
-    ["USD","EUR","GBP"].filter(c=>c!==CFG.cur).forEach(c=>ch.appendChild(el("span","chip",SYM[c]+nf(d.price[c]))));
-    ch.appendChild(el("span","chip",SYM[CFG.cur]+"1 = "+nf(1e8/d.price[CFG.cur])+" sat"));
+    ch.appendChild(el("span","chip","1 USDT = "+nf(1e8/d.price.USD)+" sat"));
     hero.appendChild(ch)}
   nodes.push(hero);homeLists().forEach(x=>nodes.push(x));
 
