@@ -6,13 +6,14 @@
 <meta name="theme-color" content="#0d0f1a">
 <title>Bitcoin Explorer</title>
 <style>
-:root{--bg:#0d0f1a;--bg2:#161a2e;--card:#1a1f36;--card2:#222849;--text:#f1f3ff;--muted:#8d94b8;--line:#2b3157;--accent:#f7931a;--accent2:#ffb347;--in:#35e0a1;--out:#ff6b6b;--blue:#5b8cff;--violet:#a66bff;--glow:0 6px 24px rgba(247,147,26,.18)}
-@media (prefers-color-scheme:light){:root{--bg:#f3f4fb;--bg2:#e9ebf8;--card:#fff;--card2:#f1f3fc;--text:#1a1d33;--muted:#6a7091;--line:#dfe2f2;--in:#0f9d6b;--out:#d93a3a;--glow:0 6px 20px rgba(247,147,26,.2)}}
+:root{--ok:#35e0a1;--warn:#f7931a;--bad:#ff6b6b;--bg:#0d0f1a;--bg2:#161a2e;--card:#1a1f36;--card2:#222849;--text:#f1f3ff;--muted:#8d94b8;--line:#2b3157;--accent:#f7931a;--accent2:#ffb347;--in:#35e0a1;--out:#ff6b6b;--blue:#5b8cff;--violet:#a66bff;--glow:0 6px 24px rgba(247,147,26,.18)}
+@media (prefers-color-scheme:light){:root:not([data-theme]){--ok:#0f9d6b;--warn:#d97706;--bad:#d93a3a;--bg:#f3f4fb;--bg2:#e9ebf8;--card:#fff;--card2:#f1f3fc;--text:#1a1d33;--muted:#6a7091;--line:#dfe2f2;--in:#0f9d6b;--out:#d93a3a;--glow:0 6px 20px rgba(247,147,26,.2)}}
+:root[data-theme=light]{--ok:#0f9d6b;--warn:#d97706;--bad:#d93a3a;--bg:#f3f4fb;--bg2:#e9ebf8;--card:#fff;--card2:#f1f3fc;--text:#1a1d33;--muted:#6a7091;--line:#dfe2f2;--in:#0f9d6b;--out:#d93a3a;--glow:0 6px 20px rgba(247,147,26,.2)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:radial-gradient(1200px 500px at 80% -10%,rgba(166,107,255,.18),transparent 60%),radial-gradient(900px 500px at -10% 0,rgba(247,147,26,.16),transparent 55%),var(--bg);background-attachment:fixed;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);min-height:100vh}
 main{max-width:600px;margin:0 auto;padding:16px 14px 40px}
-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;cursor:pointer}
+header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
 .logo{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#ffb347,#f7931a 60%,#e5740a);display:grid;place-items:center;font-weight:800;font-size:22px;color:#fff;box-shadow:var(--glow)}
 h1{font-size:22px;margin:0;font-weight:800;letter-spacing:-.02em}
 h1 span{background:linear-gradient(90deg,#ffb347,#f7931a,#ff6b6b);-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -68,24 +69,69 @@ svg.chart{width:100%;height:110px;display:block}
 .sub{font-size:12px;color:var(--muted);margin-top:6px}
 .shimmer{height:90px;border-radius:20px;margin-bottom:14px;background:linear-gradient(90deg,var(--card) 25%,var(--card2) 50%,var(--card) 75%);background-size:200% 100%;animation:sh 1.2s infinite}
 @keyframes sh{to{background-position:-200% 0}}
+.st{--c:var(--muted);display:inline-flex;align-items:center;gap:7px;border-radius:99px;padding:4px 11px;font-size:12px;font-weight:700;white-space:nowrap;color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent);border:1px solid color-mix(in srgb,var(--c) 35%,transparent)}
+.st::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--c)}
+.st.ok{--c:var(--ok)}.st.wait{--c:var(--warn)}.st.bad{--c:var(--bad)}
+.idrow{display:flex;align-items:flex-start;gap:6px;min-width:0}.idrow .mono{flex:1;min-width:0}
+.cp{flex:none;background:transparent;border:0;box-shadow:none;color:var(--muted);padding:0;border-radius:8px;display:grid;place-items:center;min-width:30px;height:30px}
+.cp.done{color:var(--ok)}
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--text);color:var(--bg);padding:9px 16px;border-radius:99px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:9}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+.brand{display:flex;align-items:center;gap:10px;cursor:pointer}
+.live .ib{width:36px;height:36px;border-radius:12px;margin-left:6px}
+.navrow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}.navrow .back{margin:0}
+.acts{display:flex;gap:8px}
+.ib{width:40px;height:40px;padding:0;display:grid;place-items:center;background:var(--card);border:1px solid var(--line);color:var(--text);box-shadow:none;border-radius:14px;flex:none}
+.ib.on{color:var(--accent);border-color:var(--accent)}
+.rt{display:flex;flex-direction:column;align-items:flex-end}.fi{color:var(--muted);font-size:12px;font-weight:500}
+.more{width:100%;margin-top:10px;padding:12px;background:var(--card2);color:var(--text);border:1px solid var(--line);box-shadow:none}
+.seg{display:flex;gap:3px;background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:3px}
+.seg button{flex:1;background:transparent;color:var(--muted);box-shadow:none;border-radius:11px;padding:10px 0;font-weight:600}
+.seg button.on{background:var(--card2);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.grp{margin-bottom:16px}.grp .lbl{margin-bottom:8px}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20;display:flex;align-items:flex-end;justify-content:center;animation:fade .2s}
+.sheetp{background:var(--card);width:100%;max-width:600px;border-radius:24px 24px 0 0;padding:18px 16px calc(22px + env(safe-area-inset-bottom,0px));max-height:88vh;overflow:auto;animation:slide .25s}
+.sh{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;font-size:17px}
+.qr{width:230px;max-width:100%;margin:0 auto 14px;background:#fff;border-radius:16px;padding:10px}.qr svg{display:block;width:100%;height:auto}
+@keyframes fade{from{opacity:0}}@keyframes slide{from{transform:translateY(30px);opacity:0}}
+#net{position:fixed;top:0;left:0;right:0;padding:calc(8px + env(safe-area-inset-top,0px)) 14px 8px;background:var(--bad);color:#fff;text-align:center;font-size:13px;font-weight:600;z-index:30;transform:translateY(-110%);transition:transform .25s}
+#net.on{transform:none}
+#ptr{position:fixed;top:calc(8px + env(safe-area-inset-top,0px));left:50%;transform:translate(-50%,0);opacity:0;background:var(--card);border:1px solid var(--line);border-radius:99px;padding:6px 14px;font-size:12px;z-index:15;pointer-events:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.cp{min-width:36px;height:36px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
+
 </head>
 <body>
 <main>
-  <header id="title"><div class="logo">₿</div><h1>Bitcoin <span>Explorer</span></h1><div class="live"><i class="dot"></i><span id="upd">canlı</span></div></header>
+  <header><div id="title" class="brand" role="button" tabindex="0" aria-label="Ana sayfa"><div class="logo">₿</div><h1>Bitcoin <span>Explorer</span></h1></div><div class="live"><i class="dot"></i><span id="upd">canlı</span><button id="set" class="ib" type="button" aria-label="Ayarlar"></button></div></header>
   <div class="search">
-    <input id="q" placeholder="Adres veya işlem ID yapıştır" autocapitalize="off" autocomplete="off" spellcheck="false">
-    <button id="go">Ara</button>
+    <input id="q" placeholder="Adres, işlem ID veya blok no" aria-label="Adres, işlem ID veya blok numarası" autocapitalize="off" autocomplete="off" spellcheck="false">
+    <button id="go" aria-label="Ara">Ara</button>
   </div>
   <div id="out"></div>
 </main>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="net" role="alert">Çevrimdışı. Bağlantı gelince otomatik yenilenecek.</div>
+<div id="ptr" aria-hidden="true"></div>
+<script src="vendor/qrcode.js"></script>
 <script>
 const API="https://mempool.space/api";
 const $=id=>document.getElementById(id);
 const out=$("out");
 let view="home",lastTs=0;
+function load(k,d){try{const v=localStorage.getItem("bx_"+k);return v?JSON.parse(v):d}catch(_){return d}}
+function save(k,v){try{localStorage.setItem("bx_"+k,JSON.stringify(v))}catch(_){}}
+const CFG=Object.assign({unit:"btc",cur:"USD",theme:"system"},load("cfg",{}));
+const FAV=load("fav",[]),REC=load("rec",[]),TRK=load("trk",[]);
+let PRICE=null;const SYM={USD:"$",EUR:"€",GBP:"£"};
+function applyTheme(){const r=document.documentElement;CFG.theme==="system"?r.removeAttribute("data-theme"):r.setAttribute("data-theme",CFG.theme)}
+applyTheme();
+
 const nf=(n,d=0)=>Number(n).toLocaleString("tr-TR",{maximumFractionDigits:d});
-const btc=s=>(s/1e8).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:8});
+const btc=s=>CFG.unit==="sat"?nf(s):(s/1e8).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:8});
+const U=()=>CFG.unit==="sat"?" sat":" BTC";
 const ago=ts=>{const s=Math.max(0,Math.floor(Date.now()/1000-ts));if(s<60)return s+" sn önce";if(s<3600)return Math.floor(s/60)+" dk önce";if(s<86400)return Math.floor(s/3600)+" sa önce";return Math.floor(s/86400)+" gün önce"};
 const when=t=>t.status&&t.status.confirmed?new Date(t.status.block_time*1000).toLocaleString("tr-TR"):"Onay bekliyor";
 const short=(s,a=8,b=6)=>s.length>a+b+1?s.slice(0,a)+"…"+s.slice(-b):s;
@@ -97,14 +143,40 @@ function row(l,r,cls){const d=el("div","row");d.appendChild(el("span",null,l));d
 function show(...n){out.innerHTML="";n.forEach(x=>out.appendChild(x))}
 function msg(t,err){const c=card();c.appendChild(el("div",err?"err":"muted",t));return c}
 function skeleton(){out.innerHTML="";for(let i=0;i<4;i++)out.appendChild(el("div","shimmer"))}
-function backBtn(){const b=el("button","back","← Ana sayfa");b.onclick=()=>{$("q").value="";home(true)};return b}
-function withBack(...n){view="detail";show(backBtn(),...n);window.scrollTo(0,0)}
+function backBtn(){const b=el("button","back","← Geri");b.onclick=()=>{history.state&&history.state.i>0?history.back():go("")};return b}
+function withBack(...n){withNav([],...n)}
+const IC='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
+const ICON_COPY=IC+'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>',ICON_OK=IC+'<path d="M5 12l5 5 9-10"/></svg>';
+let toastT;function toast(m){const t=$("toast");t.textContent=m;t.classList.add("on");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("on"),1600)}
+async function copyText(s){try{await navigator.clipboard.writeText(s)}catch(_){const t=document.createElement("textarea");t.value=s;t.style.cssText="position:fixed;opacity:0";document.body.appendChild(t);t.select();try{document.execCommand("copy")}catch(__){}t.remove()}}
+function copyBtn(text,label){const b=el("button","cp");b.type="button";b.setAttribute("aria-label",label||"Kopyala");b.innerHTML=ICON_COPY;
+  b.onclick=async e=>{e.preventDefault();e.stopPropagation();await copyText(text);b.innerHTML=ICON_OK;b.classList.add("done");toast("Kopyalandı");setTimeout(()=>{b.innerHTML=ICON_COPY;b.classList.remove("done")},1500)};return b}
+function idrow(text,label){const d=el("div","idrow");d.appendChild(el("div","mono",text));d.appendChild(copyBtn(text,label));return d}
+function badge(k,t){return el("span","st "+k,t)}
+function addrRow(addr,val,cls,sign,label){const d=el("div","row"),l=el("div","idrow"),s=el("span","mono",addr||label||"(adres yok)");
+  if(addr){s.style.cursor="pointer";s.setAttribute("role","link");s.tabIndex=0;s.onclick=()=>go("address/"+addr);s.onkeydown=e=>{if(e.key==="Enter")s.onclick()};l.appendChild(s);l.appendChild(copyBtn(addr,"Adresi kopyala"))}else l.appendChild(s);
+  d.appendChild(l);if(val!=null)d.appendChild(el("span",cls,sign+btc(val)));return d}
 function tag(text,color){const t=el("span","tag",text);t.style.background=color;return t}
+const BS="https://blockstream.info/api";let ALT=false;
+async function req(u){const c=new AbortController(),t=setTimeout(()=>c.abort(),12000);
+  try{const r=await fetch(u,{signal:c.signal});if(!r.ok){const e=new Error("HTTP "+r.status);e.status=r.status;throw e}
+    const x=await r.text();try{return JSON.parse(x)}catch(_){return x.trim()}}
+  finally{clearTimeout(t)}}
+const soft=e=>!e.status||e.status>=500||e.status===429;
+function alt(p){
+  if(p==="/v1/blocks")return["/blocks",x=>x];
+  if(p==="/v1/fees/recommended")return["/fee-estimates",x=>({fastestFee:Math.ceil(x[1]||x[2]||1),halfHourFee:Math.ceil(x[3]||1),hourFee:Math.ceil(x[6]||1)})];
+  return /^\/(tx|address|block|blocks|mempool|block-height)(\/|$)/.test(p)?[p,x=>x]:null}
 async function get(p){
-  const c=new AbortController();const t=setTimeout(()=>c.abort(),12000);
-  try{const r=await fetch(API+p,{signal:c.signal});if(!r.ok)throw new Error("HTTP "+r.status);return await r.json()}
-  finally{clearTimeout(t)}
-}
+  const ok=x=>{ALT=false;return x};
+  try{return ok(await req(API+p))}catch(e){
+    if(!soft(e))throw e;
+    await new Promise(r=>setTimeout(r,500));
+    try{return ok(await req(API+p))}catch(e2){
+      const a=soft(e2)&&alt(p);
+      if(a){try{const x=await req(BS+a[0]);ALT=true;return a[1](x)}catch(_){}}
+      if(!navigator.onLine)$("net").classList.add("on");
+      throw e2}}}
 function errText(e){return e&&e.name==="AbortError"?"zaman aşımı":(e&&e.message)||"bilinmeyen hata"}
 const PAL=["#f7931a","#5b8cff","#35e0a1","#a66bff","#ff6b6b","#ffd166","#4dd0e1","#8d94b8"];
 
@@ -213,6 +285,101 @@ precision mediump float;in vec3 vC;out vec4 o;void main(){vec2 d=gl_PointCoord-.
   return wrap;
 }
 
+// ---- ikonlar, eylemler, ayarlar, favori/takip, bildirim
+const ICONS={
+ star:IC+'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>',
+ bell:IC+'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>',
+ share:IC+'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-4M8.6 13.5l6.8 4"/></svg>',
+ qr:IC+'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h3M20 17v4"/></svg>',
+ set:IC+'<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>',
+ x:IC+'<path d="M6 6l12 12M18 6L6 18"/></svg>'};
+function ib(icon,label,fn,on){const b=el("button","ib"+(on?" on":""));b.type="button";b.setAttribute("aria-label",label);b.title=label;b.innerHTML=ICONS[icon];b.onclick=fn;return b}
+const isFav=(t,id)=>FAV.some(x=>x.t===t&&x.id===id);
+function toggleFav(t,id){const i=FAV.findIndex(x=>x.t===t&&x.id===id);if(i>=0)FAV.splice(i,1);else FAV.unshift({t,id});save("fav",FAV);return i<0}
+function pushRec(t,id){const i=REC.findIndex(x=>x.t===t&&x.id===id);if(i>=0)REC.splice(i,1);REC.unshift({t,id});REC.length=Math.min(REC.length,12);save("rec",REC)}
+function fillIcon(b,on){const s=b.firstChild;if(s&&s.setAttribute)s.setAttribute("fill",on?"currentColor":"none")}
+function favBtn(t,id){const on=isFav(t,id),b=ib("star","Favorilere ekle / çıkar",null,on);fillIcon(b,on);
+  b.onclick=()=>{const v=toggleFav(t,id);b.classList.toggle("on",v);fillIcon(b,v);toast(v?"Favorilere eklendi":"Favorilerden çıkarıldı")};return b}
+const isTrk=id=>TRK.some(x=>x.id===id);
+function trackBtn(id){const on=isTrk(id),b=ib("bell","İşlemi takip et",null,on);fillIcon(b,on);
+  b.onclick=async()=>{const i=TRK.findIndex(x=>x.id===id);let v;if(i>=0){TRK.splice(i,1);v=false}else{TRK.unshift({id,st:0});TRK.length=Math.min(TRK.length,20);v=true;await askNotif()}
+    save("trk",TRK);b.classList.toggle("on",v);fillIcon(b,v);toast(v?"Takipte: onaylanınca bildirim gelir":"Takip bırakıldı")};return b}
+async function share(title,url){const S=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.Share;
+  try{if(S){await S.share({title,text:title,url,dialogTitle:"Paylaş"});return}if(navigator.share){await navigator.share({title,url});return}}
+  catch(e){if(e&&/cancel|abort/i.test((e.name||"")+(e.message||"")))return}
+  await copyText(url);toast("Bağlantı kopyalandı")}
+const shareBtn=(title,url)=>ib("share","Paylaş",()=>share(title,url));
+const EX="https://mempool.space/";
+// bildirimler
+const LN=()=>window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.LocalNotifications;
+async function askNotif(){const l=LN();try{if(l){const r=await l.checkPermissions();if(r.display!=="granted")await l.requestPermissions();
+    await l.createChannel({id:"tx",name:"İşlem bildirimleri",importance:4})}
+  else if(window.Notification&&Notification.permission==="default")await Notification.requestPermission()}catch(_){}}
+async function notify(title,body){toast(title);const l=LN();
+  try{if(l)await l.schedule({notifications:[{id:Math.floor(Math.random()*2e9),title,body,channelId:"tx",schedule:{at:new Date(Date.now()+300)}}]});
+    else if(window.Notification&&Notification.permission==="granted")new Notification(title,{body})}catch(_){}}
+async function pollTracked(){
+  const act=TRK.filter(x=>x.st<2);if(!act.length)return;
+  let tip;try{tip=await get("/blocks/tip/height")}catch(_){return}
+  let ch=false;
+  for(const x of act){try{const t=await get("/tx/"+x.id);if(!t.status.confirmed)continue;const n=tip-t.status.block_height+1;
+    if(x.st<1){x.st=1;ch=true;notify("İşlem onaylandı",short(x.id)+" blok #"+nf(t.status.block_height)+" içinde.")}
+    if(x.st<2&&n>=6){x.st=2;ch=true;notify("İşlem 6 onaya ulaştı",short(x.id)+" kesinleşti.")}}catch(_){}}
+  if(ch){save("trk",TRK);if(view==="home")home()}}
+// sayfa kabuğu: geri + eylemler
+function withNav(acts,...n){view="detail";const d=el("div","navrow");d.appendChild(backBtn());const a=el("div","acts");acts.forEach(x=>a.appendChild(x));d.appendChild(a);show(d,...n)}
+// alt sayfa (sheet)
+let sheet=null;
+function closeSheet(){if(sheet){sheet.remove();sheet=null}}
+function openSheet(title,...n){closeSheet();const ov=el("div","ov"),p=el("div","sheetp");ov.onclick=e=>{if(e.target===ov)closeSheet()};
+  const h=el("div","sh");h.appendChild(el("b",null,title));h.appendChild(ib("x","Kapat",closeSheet));p.appendChild(h);n.forEach(c=>p.appendChild(c));ov.appendChild(p);document.body.appendChild(ov);sheet=ov}
+function seg(opts,val,on){const d=el("div","seg");opts.forEach(([v,l])=>{const b=el("button",v===val?"on":null,l);b.type="button";b.onclick=()=>{on(v);[...d.children].forEach(x=>x.classList.toggle("on",x===b))};d.appendChild(b)});return d}
+function settings(){
+  const grp=(t,opts,key,after)=>{const w=el("div","grp");w.appendChild(el("div","lbl",t));w.appendChild(seg(opts,CFG[key],v=>{CFG[key]=v;save("cfg",CFG);after()}));return w};
+  const info=el("div","muted");info.textContent="Veri: mempool.space (kesintide Blockstream yedeği). Sürüm 1.1";
+  const clr=el("button","more","Yerel verileri sil (favori, geçmiş, takip)");clr.type="button";
+  clr.onclick=()=>{FAV.length=REC.length=TRK.length=0;["fav","rec","trk"].forEach(k=>save(k,[]));toast("Silindi");if(view==="home")home()};
+  openSheet("Ayarlar",grp("Tema",[["system","Sistem"],["light","Açık"],["dark","Koyu"]],"theme",applyTheme),
+    grp("Para birimi",[["USD","USD"],["EUR","EUR"],["GBP","GBP"]],"cur",()=>route()),
+    grp("Tutar birimi",[["btc","BTC"],["sat","sat"]],"unit",()=>route()),clr,info)}
+// tutar + fiat
+const fiat=s=>{const p=PRICE&&PRICE[CFG.cur];return p?SYM[CFG.cur]+(s/1e8*p).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2}):""};
+function amtRow(label,sats,cls){const r=el("div","row");r.appendChild(el("span",null,label));const v=el("span","rt");v.appendChild(el("span",cls,btc(sats)+U()));const f=fiat(sats);if(f)v.appendChild(el("small","fi","≈ "+f));r.appendChild(v);return r}
+async function ensurePrice(){if(!PRICE)try{PRICE=await get("/v1/prices")}catch(_){}}
+// adres doğrulama (bech32/bech32m + base58check sağlama toplamı)
+const B32="qpzry9x8gf2tvdw0s3jn54khce6mua7l",B58="123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+function pm(v){const G=[0x3b6a57b2,0x26508e6d,0x1ea119fa,0x3d4233dd,0x2a1462b3];let c=1;for(const x of v){const b=c>>>25;c=((c&0x1ffffff)<<5)^x;for(let i=0;i<5;i++)if((b>>>i)&1)c^=G[i]}return c>>>0}
+function bech32ok(s){if(s!==s.toLowerCase()&&s!==s.toUpperCase())return false;s=s.toLowerCase();const i=s.lastIndexOf("1");
+  if(i<1||i+7>s.length||s.length>90||s.slice(0,i)!=="bc")return false;const d=[];for(const ch of s.slice(i+1)){const v=B32.indexOf(ch);if(v<0)return false;d.push(v)}
+  const hv=[3,3,0,2,3];const c=pm(hv.concat(d));return d[0]===0?c===1:c===0x2bc830a3}
+async function b58ok(s){let n=0n;for(const ch of s){const v=B58.indexOf(ch);if(v<0)return false;n=n*58n+BigInt(v)}
+  let hex=n.toString(16);if(hex.length%2)hex="0"+hex;const by=[];for(let i=0;i<hex.length;i+=2)by.push(parseInt(hex.slice(i,i+2),16));
+  let z=0;while(z<s.length&&s[z]==="1")z++;const all=new Uint8Array(z+by.length);all.set(by,z);
+  if(all.length!==25||(all[0]!==0&&all[0]!==5))return false;
+  if(!(window.crypto&&crypto.subtle))return true;
+  const h=async d=>new Uint8Array(await crypto.subtle.digest("SHA-256",d)),h2=await h(await h(all.slice(0,21)));
+  return [0,1,2,3].every(i=>all[21+i]===h2[i])}
+const validAddr=a=>/^bc1/i.test(a)?Promise.resolve(bech32ok(a)):b58ok(a);
+// "Daha fazla yükle"
+function moreBtn(host,shown,total,fetcher){let n=shown;if(n>=total)return;const b=el("button","more","Daha fazla yükle");b.type="button";host.appendChild(b);
+  b.onclick=async()=>{b.disabled=true;b.textContent="Yükleniyor…";try{const r=await fetcher(n);r.forEach(x=>host.insertBefore(x,b));n+=r.length;if(!r.length||n>=total)b.remove();else{b.disabled=false;b.textContent="Daha fazla yükle"}}
+    catch(e){b.disabled=false;b.textContent="Hata: tekrar dene"}}}
+// QR
+function showQR(a){const box=el("div","qr");
+  try{const q=qrcode(0,"M");q.addData("bitcoin:"+a);q.make();box.innerHTML=q.createSvgTag({scalable:true,margin:1})}catch(_){box.textContent="QR oluşturulamadı"}
+  openSheet("Adres QR kodu",box,idrow(a,"Adresi kopyala"))}
+// ana sayfa listeleri
+const TL={tx:"İşlem",address:"Adres",block:"Blok"};
+function itemRow(it,extra){const r=el("div","row"),l=el("div");r.style.cursor="pointer";r.setAttribute("role","button");r.tabIndex=0;
+  l.appendChild(el("div","mono",short(it.id,10,8)));l.appendChild(el("small","muted",TL[it.t]));r.appendChild(l);if(extra)r.appendChild(extra);
+  const f=()=>go(it.t+"/"+it.id);r.onclick=f;r.onkeydown=e=>{if(e.key==="Enter")f()};return r}
+function homeLists(){const n=[];
+  if(TRK.length){const c=card("Takip edilen işlemler");TRK.slice(0,5).forEach(x=>c.appendChild(itemRow({t:"tx",id:x.id},x.st>0?badge("ok","Onaylı"):badge("wait","Bekliyor"))));n.push(c)}
+  if(FAV.length){const c=card("Favoriler");FAV.slice(0,8).forEach(x=>c.appendChild(itemRow(x)));n.push(c)}
+  if(REC.length){const c=card("Son aramalar");REC.slice(0,6).forEach(x=>c.appendChild(itemRow(x)));
+    const b=el("button","more","Geçmişi temizle");b.type="button";b.onclick=()=>{REC.length=0;save("rec",REC);home()};c.appendChild(b);n.push(c)}
+  return n}
+
 async function home(force){
   view="home";
   if(force||!out.firstChild)skeleton();
@@ -226,8 +393,8 @@ async function home(force){
     c.appendChild(b);show(c);return;
   }
   const d={};keys.forEach((k,i)=>d[k]=res[i].status==="fulfilled"?res[i].value:null);
-  const y=window.scrollY,nodes=[];
-  $("upd").textContent="güncellendi "+new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});
+  const y=window.scrollY,nodes=[];if(d.price)PRICE=d.price;
+  $("upd").textContent="güncellendi "+new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"})+(ALT?" · yedek kaynak":"");
 
   // Hero
   const hero=card(null,"hero");const top=el("div","top");
@@ -238,15 +405,14 @@ async function home(force){
   const sp=el("span",null,b0?ago(b0.timestamp):"—");sp.id="since";s.appendChild(sp);l.appendChild(s);
   if(b0)lastTs=b0.timestamp;
   top.appendChild(l);
-  const p=el("div","price");p.appendChild(el("div","lbl","BTC"));
-  p.appendChild(el("div",null,d.price?"$"+nf(d.price.USD):"—"));top.appendChild(p);
+  const p=el("div","price");p.appendChild(el("div","lbl","BTC / "+CFG.cur));
+  p.appendChild(el("div",null,d.price?SYM[CFG.cur]+nf(d.price[CFG.cur]):"—"));top.appendChild(p);
   hero.appendChild(top);
   if(d.price){const ch=el("div","chips");
-    ch.appendChild(el("span","chip","€"+nf(d.price.EUR)));
-    ch.appendChild(el("span","chip","£"+nf(d.price.GBP)));
-    ch.appendChild(el("span","chip","$1 = "+nf(1e8/d.price.USD)+" sat"));
+    ["USD","EUR","GBP"].filter(c=>c!==CFG.cur).forEach(c=>ch.appendChild(el("span","chip",SYM[c]+nf(d.price[c]))));
+    ch.appendChild(el("span","chip",SYM[CFG.cur]+"1 = "+nf(1e8/d.price[CFG.cur])+" sat"));
     hero.appendChild(ch)}
-  nodes.push(hero);
+  nodes.push(hero);homeLists().forEach(x=>nodes.push(x));
 
   // Ücretler
   const fcard=card("Ücret tahmini (sat/vB)");const g=el("div","grid");
@@ -284,7 +450,7 @@ x.appendChild(el("b",null,v!=null?v:"—"));x.appendChild(el("small",null,n));g.
       k.appendChild(el("div",null,(b.size/1e6).toFixed(2)+" MB"));
       if(ex.pool&&ex.pool.name)k.appendChild(el("div",null,ex.pool.name));
       k.appendChild(el("div",null,ago(b.timestamp)));
-      k.onclick=()=>block(b.id);sc.appendChild(k);
+      k.onclick=()=>go("block/"+b.id);k.setAttribute("role","button");k.tabIndex=0;k.setAttribute("aria-label","Blok "+b.height);k.onkeydown=e=>{if(e.key==="Enter")k.onclick()};sc.appendChild(k);
     });
     bc.appendChild(sc);bc.appendChild(el("div","sub","Dolgu seviyesi bloğun doluluk oranını gösterir"));nodes.push(bc);
 
@@ -329,11 +495,11 @@ x.appendChild(el("b",null,v!=null?v:"—"));x.appendChild(el("small",null,n));g.
   if(d.recent){
     const rc=card("Son işlemler");
     d.recent.slice(0,10).forEach(t=>{
-      const a=el("a","tx");a.href="#";a.onclick=e=>{e.preventDefault();$("q").value=t.txid;search()};
+      const a=el("a","tx");a.href="#";a.onclick=e=>{e.preventDefault();go("tx/"+t.txid)};
       const r=el("div","row");const lf=el("div");
       lf.appendChild(el("div","mono",short(t.txid)));
       const rate=t.fee/t.vsize;lf.appendChild(tag(rate.toFixed(1)+" sat/vB",fc(rate)));
-      r.appendChild(lf);r.appendChild(el("span","in",btc(t.value)+" BTC"));
+      r.appendChild(lf);r.appendChild(el("span","in",btc(t.value)+U()));
       a.appendChild(r);rc.appendChild(a);
     });
     nodes.push(rc);
@@ -349,23 +515,22 @@ function net(tx,addr){
 }
 function txItem(tx,addr){
   const a=el("a","tx");a.href="#";
-  a.onclick=e=>{e.preventDefault();$("q").value=tx.txid;search()};
+  a.onclick=e=>{e.preventDefault();go("tx/"+tx.txid)};
   const w=el("div"),top=el("div","row");
-  if(addr){const n=net(tx,addr);top.appendChild(el("span",n>=0?"in":"out",(n>=0?"+":"−")+btc(n)+" BTC"))}
-  else top.appendChild(el("span",null,btc(tx.vout.reduce((s,o)=>s+o.value,0))+" BTC"));
-  top.appendChild(el("span","muted",when(tx)));
-  w.appendChild(top);w.appendChild(el("div","mono",tx.txid));
+  if(addr){const n=net(tx,addr);top.appendChild(el("span",n>=0?"in":"out",(n>=0?"+":"−")+btc(n)+U()))}
+  else top.appendChild(el("span",null,btc(tx.vout.reduce((s,o)=>s+o.value,0))+U()));
+  top.appendChild(tx.status&&tx.status.confirmed?badge("ok","Onaylı"):badge("wait","Bekliyor"));
+  w.appendChild(top);if(tx.status&&tx.status.confirmed)w.appendChild(el("div","muted",when(tx)));w.appendChild(el("div","mono",tx.txid));
   a.appendChild(w);return a;
 }
 
 async function block(id){
   view="detail";skeleton();
   try{
-    const [b,txs]=await Promise.all([get("/block/"+id),get("/block/"+id+"/txs")]);
-    const ex=b.extras||{};
-    const c=card("Blok "+nf(b.height));
-    c.appendChild(el("div","mono",b.id));
-    const fill=Math.min(100,b.weight/4e4);
+    const [b,txs]=await Promise.all([get("/block/"+id),get("/block/"+id+"/txs"),ensurePrice()]);
+    pushRec("block",id);
+    const ex=b.extras||{},fill=Math.min(100,(b.weight||b.size*4)/4e4);
+    const c=card("Blok "+nf(b.height));c.appendChild(idrow(id,"Blok hash'ini kopyala"));
     const bar=el("div","bar");const i=el("i");i.style.width=fill+"%";bar.appendChild(i);c.appendChild(bar);
     c.appendChild(row("Doluluk","%"+fill.toFixed(1)));
     c.appendChild(row("Zaman",new Date(b.timestamp*1000).toLocaleString("tr-TR")));
@@ -373,76 +538,116 @@ async function block(id){
     c.appendChild(row("İşlem sayısı",nf(b.tx_count)));
     c.appendChild(row("Boyut",(b.size/1e6).toFixed(2)+" MB"));
     if(ex.medianFee!=null)c.appendChild(row("Medyan ücret",Math.round(ex.medianFee)+" sat/vB"));
-    if(ex.totalFees!=null)c.appendChild(row("Toplam ücret",btc(ex.totalFees)+" BTC","in"));
-    const l=card("İlk işlemler");txs.slice(0,25).forEach(t=>l.appendChild(txItem(t)));
-    withBack(c,l);
+    if(ex.totalFees!=null)c.appendChild(amtRow("Toplam ücret",ex.totalFees,"in"));
+    const l=card("İşlemler");txs.forEach(t=>l.appendChild(txItem(t)));
+    moreBtn(l,txs.length,b.tx_count,async n=>(await get("/block/"+id+"/txs/"+n)).map(t=>txItem(t)));
+    withNav([favBtn("block",id),shareBtn("Bitcoin bloğu #"+b.height,EX+"block/"+id)],c,l);
   }catch(e){withBack(msg("Blok alınamadı ("+errText(e)+").",true))}
 }
 
 async function address(a){
-  const [info,txs]=await Promise.all([get("/address/"+a),get("/address/"+a+"/txs")]);
-  const cs=info.chain_stats,ms=info.mempool_stats;
-  const bal=cs.funded_txo_sum-cs.spent_txo_sum;
+  const [info,txs]=await Promise.all([get("/address/"+a),get("/address/"+a+"/txs"),ensurePrice()]);
+  pushRec("address",a);
+  const cs=info.chain_stats,ms=info.mempool_stats,bal=cs.funded_txo_sum-cs.spent_txo_sum;
   const c1=card("Adres","hero");
-  c1.appendChild(el("div","mono",a)).style.color="rgba(255,255,255,.8)";
-  c1.appendChild(el("div","big",btc(bal)+" BTC"));
+  const ir=idrow(a,"Adresi kopyala");ir.firstChild.style.color=ir.lastChild.style.color="rgba(255,255,255,.85)";c1.appendChild(ir);
+  c1.appendChild(el("div","big",btc(bal)+U()));
+  const f=fiat(bal);if(f)c1.appendChild(el("div","muted","≈ "+f));
   const c1b=card();
-  c1b.appendChild(row("İşlem sayısı",String(cs.tx_count+ms.tx_count)));
-  c1b.appendChild(row("Toplam alınan",btc(cs.funded_txo_sum)+" BTC","in"));
-  c1b.appendChild(row("Toplam gönderilen",btc(cs.spent_txo_sum)+" BTC","out"));
-  if(ms.tx_count)c1b.appendChild(row("Onay bekleyen",ms.tx_count+" işlem"));
-  const c2=card("Son işlemler");
+  c1b.appendChild(row("İşlem sayısı",nf(cs.tx_count+ms.tx_count)));
+  c1b.appendChild(amtRow("Toplam alınan",cs.funded_txo_sum,"in"));
+  c1b.appendChild(amtRow("Toplam gönderilen",cs.spent_txo_sum,"out"));
+  if(ms.tx_count)c1b.appendChild(row("Onay bekleyen",ms.tx_count+" işlem","out"));
+  const c2=card("İşlemler");
   if(!txs.length)c2.appendChild(el("div","muted","İşlem yok."));
-  txs.slice(0,25).forEach(t=>c2.appendChild(txItem(t,a)));
-  withBack(c1,c1b,c2);
+  txs.forEach(t=>c2.appendChild(txItem(t,a)));
+  const conf=txs.filter(t=>t.status&&t.status.confirmed);let last=conf.length?conf[conf.length-1].txid:null;
+  if(last)moreBtn(c2,conf.length,cs.tx_count,async()=>{const r=await get("/address/"+a+"/txs/chain/"+last);if(r.length)last=r[r.length-1].txid;return r.map(t=>txItem(t,a))});
+  withNav([favBtn("address",a),ib("qr","QR kod",()=>showQR(a)),shareBtn("Bitcoin adresi",EX+"address/"+a)],c1,c1b,c2);
 }
 
 async function tx(id){
-  const t=await get("/tx/"+id);
-  const total=t.vout.reduce((s,o)=>s+o.value,0);
-  const rate=t.fee/(t.weight?t.weight/4:t.size);
-  const c=card("İşlem");
-  c.appendChild(el("div","mono",id));
-  const st=row("Durum",t.status.confirmed?"Onaylandı (blok "+t.status.block_height+")":"Onay bekliyor",t.status.confirmed?"in":"out");
-  c.appendChild(st);
-  c.appendChild(row("Zaman",when(t)));
-  c.appendChild(row("Toplam çıkış",btc(total)+" BTC"));
+  let t;
+  try{t=await get("/tx/"+id)}catch(e){
+    if(!/404/.test(e.message))throw e;
+    const c=card("İşlem");c.appendChild(idrow(id,"İşlem ID'sini kopyala"));
+    const r=el("div","row");r.appendChild(el("span",null,"Durum"));r.appendChild(badge("bad","Bulunamadı"));c.appendChild(r);
+    c.appendChild(el("div","muted","Bu ID ağda görünmüyor. İşlem reddedilmiş, mempool'dan düşmüş ya da henüz yayılmamış olabilir."));
+    withBack(c);return}
+  await ensurePrice();pushRec("tx",id);
+  const total=t.vout.reduce((s,o)=>s+o.value,0),rate=t.fee/(t.weight?t.weight/4:t.size);
+  let st,rb=null;
+  if(t.status.confirmed){const tip=await get("/blocks/tip/height").catch(()=>null);st=badge("ok",tip?"Onaylandı · "+nf(tip-t.status.block_height+1)+" onay":"Onaylandı")}
+  else{const r=await get("/v1/tx/"+id+"/rbf").catch(()=>null);rb=r&&r.replacements&&r.replacements.tx&&r.replacements.tx.txid;st=rb?badge("bad","Değiştirildi (RBF)"):badge("wait","Onay bekliyor")}
+  const c=card("İşlem");c.appendChild(idrow(id,"İşlem ID'sini kopyala"));
+  const sr=el("div","row");sr.appendChild(el("span",null,"Durum"));sr.appendChild(st);c.appendChild(sr);
+  if(rb){const x=row("Değiştiren işlem",short(rb),"mono");x.style.cursor="pointer";x.onclick=()=>go("tx/"+rb);c.appendChild(x)}
+  if(t.status.confirmed){c.appendChild(row("Zaman",when(t)));const x=row("Blok","#"+nf(t.status.block_height),"in");x.style.cursor="pointer";x.onclick=()=>go("block/"+t.status.block_hash);c.appendChild(x)}
+  c.appendChild(amtRow("Toplam çıkış",total,"" ));
   const fr=el("div","row");fr.appendChild(el("span",null,"Ücret"));
-  const fw=el("span");fw.appendChild(document.createTextNode(nf(t.fee)+" sat "));fw.appendChild(tag(rate.toFixed(1)+" sat/vB",fc(rate)));fr.appendChild(fw);c.appendChild(fr);
+  const fv=el("span","rt"),fw=el("span");fw.appendChild(document.createTextNode(nf(t.fee)+" sat "));fw.appendChild(tag(rate.toFixed(1)+" sat/vB",fc(rate)));fv.appendChild(fw);
+  const ff=fiat(t.fee);if(ff)fv.appendChild(el("small","fi","≈ "+ff));fr.appendChild(fv);c.appendChild(fr);
   c.appendChild(row("Giriş / çıkış",t.vin.length+" / "+t.vout.length));
   c.appendChild(row("Boyut",t.size+" bayt"));
-  const ins=card("Girişler");
-  t.vin.slice(0,20).forEach(x=>{
-    const d=el("div","row");
-    d.appendChild(el("span","mono",x.is_coinbase?"Coinbase (yeni basılan)":(x.prevout&&x.prevout.scriptpubkey_address)||"(adres yok)"));
-    if(x.prevout)d.appendChild(el("span","out","−"+btc(x.prevout.value)));
-    ins.appendChild(d)});
-  const o=card("Çıkışlar");
-  t.vout.slice(0,30).forEach(x=>{
-    const d=el("div","row");
-    d.appendChild(el("span","mono",x.scriptpubkey_address||"(adres yok)"));
-    d.appendChild(el("span","in","+"+btc(x.value)));
-    o.appendChild(d);
-  });
-  withBack(txfx(t),c,ins,o);
+  const ins=card("Girişler"),o=card("Çıkışlar");
+  t.vin.slice(0,20).forEach(x=>ins.appendChild(addrRow(x.is_coinbase?null:x.prevout&&x.prevout.scriptpubkey_address,x.prevout?x.prevout.value:null,"out","−",x.is_coinbase?"Coinbase (yeni basılan)":null)));
+  if(t.vin.length>20)ins.appendChild(el("div","muted","+"+(t.vin.length-20)+" giriş daha"));
+  t.vout.slice(0,30).forEach(x=>o.appendChild(addrRow(x.scriptpubkey_address,x.value,"in","+")));
+  if(t.vout.length>30)o.appendChild(el("div","muted","+"+(t.vout.length-30)+" çıkış daha"));
+  const acts=[];if(!t.status.confirmed)acts.push(trackBtn(id));acts.push(favBtn("tx",id),shareBtn("Bitcoin işlemi",EX+"tx/"+id));
+  withNav(acts,txfx(t),c,ins,o);
 }
+
+// ---- yönlendirme: geri tuşu / kenardan kaydırma tarayıcı geçmişiyle çalışır
+let idx=0,rid=0;const scrolls={};
+history.replaceState({i:0},"");
+function go(p){closeSheet();const same=p===""?(!location.hash||location.hash==="#/"):location.hash==="#/"+p;
+  if(same){route();return}
+  scrolls[idx]=window.scrollY;history.pushState({i:++idx},"",p===""?location.pathname+location.search:"#/"+p);route()}
+async function route(){
+  const my=++rid,parts=location.hash.slice(2).split("/"),k=parts[0],a=decodeURIComponent(parts.slice(1).join("/")),y=scrolls[idx]||0;
+  try{
+    if(k==="tx"){view="detail";$("q").value=a;skeleton();await tx(a)}
+    else if(k==="address"){view="detail";$("q").value=a;skeleton();await address(a)}
+    else if(k==="block"){await block(a)}
+    else{$("q").value="";await home(true)}
+  }catch(e){if(my===rid)withBack(msg("Sonuç alınamadı ("+errText(e)+"). Adresi kontrol et veya biraz sonra tekrar dene.",true))}
+  window.scrollTo(0,y);
+}
+addEventListener("popstate",e=>{closeSheet();idx=(e.state&&e.state.i)||0;route()});
+if(/android/i.test(navigator.userAgent)){let sx=0,sy=0,ok=false;
+  addEventListener("touchstart",e=>{const t=e.touches[0];sx=t.clientX;sy=t.clientY;ok=sx<24},{passive:true});
+  addEventListener("touchend",e=>{if(!ok)return;ok=false;const t=e.changedTouches[0];if(t.clientX-sx>70&&Math.abs(t.clientY-sy)<60&&history.state&&history.state.i>0)history.back()},{passive:true})}
 
 async function search(){
   const q=$("q").value.trim();
-  if(!q){home(true);return}
-  view="detail";skeleton();
-  try{
-    if(/^[0-9a-fA-F]{64}$/.test(q))await tx(q);
-    else if(/^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,90}$/.test(q))await address(q);
-    else withBack(msg("Geçerli bir Bitcoin adresi veya 64 karakterlik işlem ID gir.",true));
-  }catch(e){withBack(msg("Sonuç alınamadı ("+errText(e)+"). Adresi kontrol et veya biraz sonra tekrar dene.",true))}
+  if(!q){go("");return}
+  const bad=m=>{view="detail";withBack(msg(m,true))};
+  if(/^[0-9a-fA-F]{64}$/.test(q))go("tx/"+q);
+  else if(/^\d{1,7}$/.test(q)){view="detail";skeleton();
+    try{go("block/"+await get("/block-height/"+q))}catch(e){bad(/404/.test(e.message)?"Bu yükseklikte blok yok.":"Blok alınamadı ("+errText(e)+").")}}
+  else if(/^(bc1|BC1|[13])[a-zA-HJ-NP-Z0-9]{25,90}$/.test(q)){
+    if(await validAddr(q))go("address/"+q);else bad("Adres sağlama toplamı (checksum) hatalı. Bir karakter yanlış yazılmış olabilir.")}
+  else bad("Geçerli bir adres, 64 karakterlik işlem ID veya blok numarası gir.")
 }
 $("go").onclick=search;
-$("title").onclick=()=>{$("q").value="";home(true)};
+$("title").onclick=()=>go("");
 $("q").addEventListener("keydown",e=>{if(e.key==="Enter")search()});
 setInterval(()=>{const s=$("since");if(s&&lastTs)s.textContent=ago(lastTs)},1000);
 setInterval(()=>{if(view==="home"&&!document.hidden)home()},30000);
-home(true);
+// çevrimdışı şeridi, aşağı çekip yenileme, bildirim kanalı, takip yoklaması
+addEventListener("offline",()=>$("net").classList.add("on"));
+addEventListener("online",()=>{$("net").classList.remove("on");route()});
+{const ptr=$("ptr");let py=0,pull=false;
+  addEventListener("touchstart",e=>{const t=e.touches[0];pull=window.scrollY<=0&&t.clientX>=24&&!sheet;py=t.clientY},{passive:true});
+  addEventListener("touchmove",e=>{if(!pull)return;const d=e.touches[0].clientY-py;if(d>0&&window.scrollY<=0){ptr.style.opacity=Math.min(1,d/90);ptr.style.transform="translate(-50%,"+Math.min(d/2,50)+"px)";ptr.textContent=d>90?"Bırak: yenile":"Yenilemek için çek"}},{passive:true});
+  addEventListener("touchend",e=>{if(!pull)return;pull=false;const d=e.changedTouches[0].clientY-py;ptr.style.opacity=0;ptr.style.transform="translate(-50%,0)";if(d>90&&window.scrollY<=0){toast("Yenileniyor");route()}},{passive:true})}
+$("set").innerHTML=ICONS.set;$("set").onclick=settings;
+$("title").onkeydown=e=>{if(e.key==="Enter")go("")};
+setInterval(()=>{if(!document.hidden)pollTracked()},45000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)pollTracked()});
+ensurePrice();pollTracked();
+route();
 </script>
 </body>
 </html>

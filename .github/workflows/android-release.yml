@@ -1,0 +1,59 @@
+name: Android Release APK (imzali)
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      VERSION_CODE: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npx cap sync android
+
+      - name: Imza anahtarini hazirla
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD_SECRET: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS_SECRET: ${{ secrets.KEY_ALIAS }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            echo "KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+            echo "KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD_SECRET" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=$KEY_ALIAS_SECRET" >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> "$GITHUB_ENV"
+          else
+            echo "::warning::KEYSTORE_BASE64 secret yok: gecici anahtarla imzalaniyor. Guncelleme icin kalici anahtar ekle (README)."
+            keytool -genkeypair -v -keystore "$RUNNER_TEMP/temp.jks" -alias temp -keyalg RSA -keysize 2048 -validity 10000 -storepass tempPass123 -keypass tempPass123 -dname "CN=Bitcoin Explorer"
+            echo "KEYSTORE_PATH=$RUNNER_TEMP/temp.jks" >> "$GITHUB_ENV"
+            echo "KEYSTORE_PASSWORD=tempPass123" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=temp" >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=tempPass123" >> "$GITHUB_ENV"
+          fi
+
+      - name: Release APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bitcoin-explorer-release-apk
+          path: android/app/build/outputs/apk/release/*.apk

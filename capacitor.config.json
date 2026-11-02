@@ -1,5 +1,11 @@
 {
   "appId": "com.devsoftware.bitcoinexplorer",
   "appName": "Bitcoin Explorer",
-  "webDir": "www"
+  "webDir": "www",
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_btc",
+      "iconColor": "#F7931A"
+    }
+  }
 }
