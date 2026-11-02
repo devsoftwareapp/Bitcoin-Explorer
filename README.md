@@ -26,7 +26,7 @@ Web arayüzü `www/` klasöründedir.
 - Geri tuşu / kenardan kaydırma, aşağı çekip yenileme, çevrimdışı şeridi
 - Blok numarasıyla arama, adres checksum doğrulaması, "daha fazla yükle"
 - Favoriler, son aramalar, işlem takibi (onay bildirimi), QR kod, paylaş
-- Ayarlar: tema, BTC/sat. Fiyatlar USDT olarak gösterilir (USD/EUR/GBP yok)
+- Ayarlar: tema, BTC/sat. Fiyatlar sadece USD olarak gösterilir (EUR/GBP yok)
 - Blockstream yedek API
 
 ## İmzalı release APK

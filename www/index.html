@@ -136,7 +136,7 @@ function load(k,d){try{const v=localStorage.getItem("bx_"+k);return v?JSON.parse
 function save(k,v){try{localStorage.setItem("bx_"+k,JSON.stringify(v))}catch(_){}}
 const CFG=Object.assign({unit:"btc",theme:"system"},load("cfg",{}));
 const FAV=load("fav",[]),REC=load("rec",[]),TRK=load("trk",[]);
-let PRICE=null;// fiyat: mempool.space USD fiyatı, USDT olarak gösterilir
+let PRICE=null;// fiyat: mempool.space USD fiyatı, USD olarak gösterilir
 function applyTheme(){const r=document.documentElement;CFG.theme==="system"?r.removeAttribute("data-theme"):r.setAttribute("data-theme",CFG.theme)}
 applyTheme();
 
@@ -353,7 +353,7 @@ function settings(){
   openSheet("Ayarlar",grp("Tema",[["system","Sistem"],["light","Açık"],["dark","Koyu"]],"theme",applyTheme),
     grp("Tutar birimi",[["btc","BTC"],["sat","sat"]],"unit",()=>route()),clr,info)}
 // tutar + fiat
-const fiat=s=>{const p=PRICE&&PRICE.USD;return p?(s/1e8*p).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2})+" USDT":""};
+const fiat=s=>{const p=PRICE&&PRICE.USD;return p?(s/1e8*p).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2})+" USD":""};
 function amtRow(label,sats,cls){const r=el("div","row");r.appendChild(el("span",null,label));const v=el("span","rt");v.appendChild(el("span",cls,btc(sats)+U()));const f=fiat(sats);if(f)v.appendChild(el("small","fi","≈ "+f));r.appendChild(v);return r}
 async function ensurePrice(){if(!PRICE)try{PRICE=await get("/v1/prices")}catch(_){}}
 // adres doğrulama (bech32/bech32m + base58check sağlama toplamı)
@@ -448,11 +448,11 @@ async function home(force){
   const sp=el("span",null,b0?ago(b0.timestamp):"—");sp.id="since";s.appendChild(sp);l.appendChild(s);
   if(b0)lastTs=b0.timestamp;
   top.appendChild(l);
-  const p=el("div","price");p.appendChild(el("div","lbl","BTC / USDT"));
-  p.appendChild(el("div",null,d.price?nf(d.price.USD)+" USDT":"—"));top.appendChild(p);
+  const p=el("div","price");p.appendChild(el("div","lbl","BTC / USD"));
+  p.appendChild(el("div",null,d.price?nf(d.price.USD)+" USD":"—"));top.appendChild(p);
   hero.appendChild(top);
   if(d.price){const ch=el("div","chips");
-    ch.appendChild(el("span","chip","1 USDT = "+nf(1e8/d.price.USD)+" sat"));
+    ch.appendChild(el("span","chip","1 USD = "+nf(1e8/d.price.USD)+" sat"));
     hero.appendChild(ch)}
   nodes.push(hero);homeLists().forEach(x=>nodes.push(x));
 
