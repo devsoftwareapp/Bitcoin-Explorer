@@ -75,6 +75,7 @@ svg.chart{width:100%;height:110px;display:block}
 .idrow{display:flex;align-items:flex-start;gap:6px;min-width:0}.idrow .mono{flex:1;min-width:0}
 .cp{flex:none;background:transparent;border:0;box-shadow:none;color:var(--muted);padding:0;border-radius:8px;display:grid;place-items:center;min-width:30px;height:30px}
 .cp.done{color:var(--ok)}
+.cp.wt.on{color:var(--accent)}.hero .cp{color:rgba(255,255,255,.85)}.hero .cp.wt.on{background:rgba(255,255,255,.3);color:#fff;border-radius:10px}
 #toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--text);color:var(--bg);padding:9px 16px;border-radius:99px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:9}
 #toast.on{opacity:1;transform:translate(-50%,0)}
 .brand{display:flex;align-items:center;gap:10px;cursor:pointer}
@@ -135,7 +136,7 @@ let view="home",lastTs=0;
 function load(k,d){try{const v=localStorage.getItem("bx_"+k);return v?JSON.parse(v):d}catch(_){return d}}
 function save(k,v){try{localStorage.setItem("bx_"+k,JSON.stringify(v))}catch(_){}}
 const CFG=Object.assign({unit:"btc",theme:"system"},load("cfg",{}));
-const FAV=load("fav",[]),REC=load("rec",[]),TRK=load("trk",[]);
+const FAV=load("fav",[]),REC=load("rec",[]),TRK=load("trk",[]),WTRK=load("wtrk",[]);
 let PRICE=null;// fiyat: mempool.space USD fiyatı, USD olarak gösterilir
 function applyTheme(){const r=document.documentElement;CFG.theme==="system"?r.removeAttribute("data-theme"):r.setAttribute("data-theme",CFG.theme)}
 applyTheme();
@@ -337,6 +338,21 @@ async function pollTracked(){
     if(x.st<1){x.st=1;ch=true;notify("İşlem onaylandı",short(x.id)+" blok #"+nf(t.status.block_height)+" içinde.")}
     if(x.st<2&&n>=6){x.st=2;ch=true;notify("İşlem 6 onaya ulaştı",short(x.id)+" kesinleşti.")}}catch(_){}}
   if(ch){save("trk",TRK);if(view==="home")home()}}
+// cüzdan takibi: adreste yeni hareket olunca bildirim
+const walletSt=i=>{const c=i.chain_stats,m=i.mempool_stats;return{n:c.tx_count+m.tx_count,b:c.funded_txo_sum-c.spent_txo_sum+m.funded_txo_sum-m.spent_txo_sum}};
+const isWal=id=>WTRK.some(x=>x.id===id);
+function walletBtn(id,cur){const b=el("button","cp wt"+(isWal(id)?" on":""));b.type="button";b.setAttribute("aria-label","Cüzdanı takip et / bırak");b.title="Cüzdanı takip et";b.innerHTML=ICONS.wallet;
+  b.onclick=async e=>{e.preventDefault();e.stopPropagation();const i=WTRK.findIndex(x=>x.id===id);let v;
+    if(i>=0){WTRK.splice(i,1);v=false}
+    else{if(WTRK.length>=10){toast("En fazla 10 cüzdan takip edilir");return}WTRK.unshift({id,n:cur.n,b:cur.b});v=true;await askNotif()}
+    save("wtrk",WTRK);b.classList.toggle("on",v);toast(v?"Cüzdan takipte: yeni hareket olunca bildirim gelir":"Cüzdan takibi bırakıldı")};return b}
+let wbusy=false;
+async function pollWallets(){if(wbusy||!WTRK.length)return;wbusy=true;let ch=false;
+  try{for(const w of WTRK.slice()){try{const s=walletSt(await get("/address/"+w.id));
+    if(s.n>w.n){const d=s.b-w.b;notify("Cüzdanda yeni hareket",short(w.id)+" · "+(d>=0?"+":"−")+btc(Math.abs(d))+U())}
+    if(s.n!==w.n||s.b!==w.b){w.n=s.n;w.b=s.b;ch=true}}catch(_){}}}
+  finally{wbusy=false}
+  if(ch){save("wtrk",WTRK);if(view==="home")home()}}
 // sayfa kabuğu: geri + eylemler
 function withNav(acts,...n){view="detail";const d=el("div","navrow");d.appendChild(backBtn());const a=el("div","acts");acts.forEach(x=>a.appendChild(x));d.appendChild(a);show(d,...n)}
 // alt sayfa (sheet)
@@ -347,9 +363,9 @@ function openSheet(title,...n){closeSheet();const ov=el("div","ov"),p=el("div","
 function seg(opts,val,on){const d=el("div","seg");opts.forEach(([v,l])=>{const b=el("button",v===val?"on":null,l);b.type="button";b.onclick=()=>{on(v);[...d.children].forEach(x=>x.classList.toggle("on",x===b))};d.appendChild(b)});return d}
 function settings(){
   const grp=(t,opts,key,after)=>{const w=el("div","grp");w.appendChild(el("div","lbl",t));w.appendChild(seg(opts,CFG[key],v=>{CFG[key]=v;save("cfg",CFG);after()}));return w};
-  const info=el("div","muted");info.textContent="Veri: genel Bitcoin ağı API'leri (yedek kaynaklı). Sürüm 1.2";
-  const clr=el("button","more","Yerel verileri sil (favori, geçmiş, takip)");clr.type="button";
-  clr.onclick=()=>{FAV.length=REC.length=TRK.length=0;["fav","rec","trk"].forEach(k=>save(k,[]));toast("Silindi");if(view==="home")home()};
+  const info=el("div","muted");info.textContent="Veri: genel Bitcoin ağı API'leri (yedek kaynaklı). Sürüm 1.3";
+  const clr=el("button","more","Yerel verileri sil (favori, geçmiş, takip, cüzdan)");clr.type="button";
+  clr.onclick=()=>{FAV.length=REC.length=TRK.length=WTRK.length=0;["fav","rec","trk","wtrk"].forEach(k=>save(k,[]));toast("Silindi");if(view==="home")home()};
   openSheet("Ayarlar",grp("Tema",[["system","Sistem"],["light","Açık"],["dark","Koyu"]],"theme",applyTheme),
     grp("Tutar birimi",[["btc","BTC"],["sat","sat"]],"unit",()=>route()),clr,info)}
 // tutar + fiat
@@ -385,6 +401,7 @@ function itemRow(it,extra){const r=el("div","row"),l=el("div");r.style.cursor="p
   const f=()=>go(it.t+"/"+it.id);r.onclick=f;r.onkeydown=e=>{if(e.key==="Enter")f()};return r}
 function homeLists(){const n=[];
   if(TRK.length){const c=card("Takip edilen işlemler");TRK.slice(0,5).forEach(x=>c.appendChild(itemRow({t:"tx",id:x.id},x.st>0?badge("ok","Onaylı"):badge("wait","Bekliyor"))));n.push(c)}
+  if(WTRK.length){const c=card("Takip edilen cüzdanlar");WTRK.slice(0,5).forEach(x=>c.appendChild(itemRow({t:"address",id:x.id},el("span","in",btc(x.b)+U()))));n.push(c)}
   if(FAV.length){const c=card("Favoriler");FAV.slice(0,8).forEach(x=>c.appendChild(itemRow(x)));n.push(c)}
   if(REC.length){const c=card("Son aramalar");REC.slice(0,6).forEach(x=>c.appendChild(itemRow(x)));
     const b=el("button","more","Geçmişi temizle");b.type="button";b.onclick=()=>{REC.length=0;save("rec",REC);home()};c.appendChild(b);n.push(c)}
@@ -394,22 +411,24 @@ function homeLists(){const n=[];
 ICONS.menu=IC+'<path d="M4 6h16M4 12h16M4 18h16"/></svg>';
 ICONS.home=IC+'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>';
 ICONS.clock=IC+'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+ICONS.wallet=IC+'<path d="M3 7a2 2 0 0 1 2-2h12v3"/><path d="M3 7v11a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1H5a2 2 0 0 1-2-2z"/><circle cx="16.5" cy="14" r="1"/></svg>';
 ICONS.info=IC+'<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg>';
 let drawer=null;
 function closeDrawer(){if(drawer){const d=drawer;drawer=null;d.classList.add("out");setTimeout(()=>d.remove(),180)}}
-function about(){const l=el("div","muted");l.textContent="Bitcoin Explorer 1.2. İşlem, adres ve blok görüntüleyici. Cüzdan değildir; anahtar veya bakiye saklamaz. Veriler genel Bitcoin ağı API'lerinden gelir, kesintide yedek kaynağa geçilir.";openSheet("Hakkında",l)}
+function about(){const l=el("div","muted");l.textContent="Bitcoin Explorer 1.3. İşlem, adres ve blok görüntüleyici. Cüzdan değildir; anahtar veya bakiye saklamaz. Veriler genel Bitcoin ağı API'lerinden gelir, kesintide yedek kaynağa geçilir.";openSheet("Hakkında",l)}
 function openDrawer(){
   closeSheet();if(drawer)return;
   const ov=el("div","dov"),p=el("nav","dpanel");p.setAttribute("aria-label","Ana menü");
   ov.onclick=e=>{if(e.target===ov)closeDrawer()};
   const hd=el("div","dhd");hd.appendChild(el("div","logo","₿"));
-  const tt=el("div");tt.appendChild(el("b",null,"Bitcoin Explorer"));tt.appendChild(el("small","muted","Sürüm 1.2"));hd.appendChild(tt);p.appendChild(hd);
+  const tt=el("div");tt.appendChild(el("b",null,"Bitcoin Explorer"));tt.appendChild(el("small","muted","Sürüm 1.3"));hd.appendChild(tt);p.appendChild(hd);
   const cur=location.hash.slice(2).split("/")[0];
   const it=(icon,label,key,fn,n)=>{const b=el("button","ditem"+(key===cur?" on":""));b.type="button";const s=el("span");s.innerHTML=ICONS[icon];b.appendChild(s);b.appendChild(el("span","dl",label));
     if(n)b.appendChild(el("span","dn",String(n)));b.onclick=()=>{closeDrawer();fn()};p.appendChild(b)};
   it("home","Ana sayfa","",()=>go(""));
   it("star","Favoriler","favs",()=>go("favs"),FAV.length);
   it("bell","Takip edilen işlemler","tracked",()=>go("tracked"),TRK.length);
+  it("wallet","Takip edilen cüzdanlar","wallets",()=>go("wallets"),WTRK.length);
   it("clock","Son aramalar","recent",()=>go("recent"),REC.length);
   p.appendChild(el("div","dsep"));
   it("set","Ayarlar","_",settings);
@@ -592,7 +611,7 @@ async function address(a){
   pushRec("address",a);
   const cs=info.chain_stats,ms=info.mempool_stats,bal=cs.funded_txo_sum-cs.spent_txo_sum;
   const c1=card("Adres","hero");
-  const ir=idrow(a,"Adresi kopyala");ir.firstChild.style.color=ir.lastChild.style.color="rgba(255,255,255,.85)";c1.appendChild(ir);
+  const ir=idrow(a,"Adresi kopyala");ir.firstChild.style.color=ir.lastChild.style.color="rgba(255,255,255,.85)";ir.appendChild(walletBtn(a,walletSt(info)));c1.appendChild(ir);
   c1.appendChild(el("div","big",btc(bal)+U()));
   const f=fiat(bal);if(f)c1.appendChild(el("div","muted","≈ "+f));
   const c1b=card();
@@ -654,6 +673,7 @@ async function route(){
     else if(k==="block"){await block(a)}
     else if(k==="favs"){$("q").value="";listPage("Favoriler",FAV,"Henüz favori yok. Adres, işlem veya blok sayfasında yıldıza dokun.")}
     else if(k==="tracked"){$("q").value="";listPage("Takip edilen işlemler",TRK.map(x=>({t:"tx",id:x.id,st:x.st})),"Takip edilen işlem yok. Bekleyen bir işlemin sayfasında zil simgesine dokun.",x=>x.st>0?badge("ok","Onaylı"):badge("wait","Bekliyor"))}
+    else if(k==="wallets"){$("q").value="";listPage("Takip edilen cüzdanlar",WTRK.map(x=>({t:"address",id:x.id,b:x.b})),"Takip edilen cüzdan yok. Bir adres sayfasında kopyala simgesinin yanındaki cüzdan simgesine dokun.",x=>el("span","in",btc(x.b)+U()))}
     else if(k==="recent"){$("q").value="";listPage("Son aramalar",REC,"Henüz arama yok.")}
     else{$("q").value="";await home(true)}
   }catch(e){if(my===rid)withBack(msg("Sonuç alınamadı ("+errText(e)+"). Adresi kontrol et veya biraz sonra tekrar dene.",true))}
@@ -690,9 +710,9 @@ addEventListener("online",()=>{$("net").classList.remove("on");route()});
 $("menu").innerHTML=ICONS.menu;$("menu").onclick=openDrawer;
 $("title").onkeydown=e=>{if(e.key==="Enter")go("")};
 {const AP=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App;if(AP&&AP.addListener)AP.addListener("backButton",()=>{if(!goBack())AP.exitApp()})}
-setInterval(()=>{if(!document.hidden)pollTracked()},45000);
-document.addEventListener("visibilitychange",()=>{if(!document.hidden)pollTracked()});
-ensurePrice();pollTracked();
+setInterval(()=>{if(!document.hidden){pollTracked();pollWallets()}},45000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden){pollTracked();pollWallets()}});
+ensurePrice();pollTracked();pollWallets();
 route();
 </script>
 </body>

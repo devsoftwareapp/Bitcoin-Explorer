@@ -37,3 +37,8 @@ Not: Takip bildirimleri uygulama açıkken/arka planda canlıyken çalışır; A
 ## v1.2
 - Sol üstte yan menü (Ana sayfa, Favoriler, Takip, Son aramalar, Ayarlar, Hakkında)
 - Sistem geri hareketi (soldan kaydırma) uygulama içinde bir önceki sayfaya döner
+
+## v1.3
+- Cüzdan takibi: adres sayfasında kopyala simgesinin yanındaki cüzdan simgesiyle adres takip edilir, yeni hareket olunca bildirim gelir. Yan menüde "Takip edilen cüzdanlar" (en fazla 10)
+- Fiyat sadece USD olarak gösterilir
+- compileSdk/targetSdk 37, minSdk 24, JDK 25, AGP 9.1.1, Gradle 9.3.1
