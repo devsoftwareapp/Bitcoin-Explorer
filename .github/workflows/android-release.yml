@@ -1,4 +1,4 @@
-name: Android Release APK (imzali)
+name: Android Release (AAB + APK, signed)
 
 on:
   workflow_dispatch:
@@ -26,34 +26,49 @@ jobs:
       - run: npm ci
       - run: npx cap sync android
 
-      - name: Imza anahtarini hazirla
+      - name: Prepare signing key
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD_SECRET: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS_SECRET: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD_SECRET: ${{ secrets.KEY_PASSWORD }}
         run: |
-          if [ -n "$KEYSTORE_BASE64" ]; then
+          if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD_SECRET" ] && [ -n "$KEY_ALIAS_SECRET" ] && [ -n "$KEY_PASSWORD_SECRET" ]; then
             echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
-            echo "KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
-            echo "KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD_SECRET" >> "$GITHUB_ENV"
-            echo "KEY_ALIAS=$KEY_ALIAS_SECRET" >> "$GITHUB_ENV"
-            echo "KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}" >> "$GITHUB_ENV"
+            {
+              echo "KEYSTORE_PATH=$RUNNER_TEMP/release.jks"
+              echo "KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD_SECRET"
+              echo "KEY_ALIAS=$KEY_ALIAS_SECRET"
+              echo "KEY_PASSWORD=$KEY_PASSWORD_SECRET"
+            } >> "$GITHUB_ENV"
+            echo "Signing with the repository keystore."
           else
-            echo "::warning::KEYSTORE_BASE64 secret yok: gecici anahtarla imzalaniyor. Guncelleme icin kalici anahtar ekle (README)."
+            echo "::warning::Signing secrets are incomplete: using a temporary key. Updates will not install over the store-signed build."
             keytool -genkeypair -v -keystore "$RUNNER_TEMP/temp.jks" -alias temp -keyalg RSA -keysize 2048 -validity 10000 -storepass tempPass123 -keypass tempPass123 -dname "CN=Bitcoin Explorer"
-            echo "KEYSTORE_PATH=$RUNNER_TEMP/temp.jks" >> "$GITHUB_ENV"
-            echo "KEYSTORE_PASSWORD=tempPass123" >> "$GITHUB_ENV"
-            echo "KEY_ALIAS=temp" >> "$GITHUB_ENV"
-            echo "KEY_PASSWORD=tempPass123" >> "$GITHUB_ENV"
+            {
+              echo "KEYSTORE_PATH=$RUNNER_TEMP/temp.jks"
+              echo "KEYSTORE_PASSWORD=tempPass123"
+              echo "KEY_ALIAS=temp"
+              echo "KEY_PASSWORD=tempPass123"
+            } >> "$GITHUB_ENV"
           fi
 
-      - name: Release APK
+      - name: Build release AAB and APK
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease
+          ./gradlew bundleRelease assembleRelease
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload release AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: bitcoin-explorer-release-aab
+          path: android/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+
+      - name: Upload release APK
+        uses: actions/upload-artifact@v4
         with:
           name: bitcoin-explorer-release-apk
           path: android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error

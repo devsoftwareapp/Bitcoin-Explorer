@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -131,15 +131,15 @@ svg.chart{width:100%;height:110px;display:block}
 </head>
 <body>
 <main>
-  <header><button id="menu" class="ib" type="button" aria-label="Menüyü aç" aria-haspopup="true"></button><div id="title" class="brand" role="button" tabindex="0" aria-label="Ana sayfa"><div class="logo">₿</div><h1>Bitcoin <span>Explorer</span></h1></div><div class="live"><i class="dot"></i><span id="upd">canlı</span></div></header>
+  <header><button id="menu" class="ib" type="button" aria-label="Open menu" aria-haspopup="true"></button><div id="title" class="brand" role="button" tabindex="0" aria-label="Home"><div class="logo">₿</div><h1>Bitcoin <span>Explorer</span></h1></div><div class="live"><i class="dot"></i><span id="upd">live</span></div></header>
   <div class="search">
-    <input id="q" type="search" enterkeyhint="search" placeholder="Adres, işlem ID veya blok no" aria-label="Adres, işlem ID veya blok numarası" autocapitalize="off" autocomplete="off" spellcheck="false">
-    <button id="go" aria-label="Ara">Ara</button>
+    <input id="q" type="search" enterkeyhint="search" placeholder="Address, transaction ID or block height" aria-label="Address, transaction ID or block number" autocapitalize="off" autocomplete="off" spellcheck="false">
+    <button id="go" aria-label="Search">Search</button>
   </div>
   <div id="out"></div>
 </main>
 <div id="toast" role="status" aria-live="polite"></div>
-<div id="net" role="alert">Çevrimdışı. Bağlantı gelince otomatik yenilenecek.</div>
+<div id="net" role="alert">Offline. Will refresh automatically when the connection returns.</div>
 <div id="ptr" aria-hidden="true"></div>
 <script src="vendor/qrcode.js"></script>
 <script>
@@ -151,7 +151,7 @@ function load(k,d){try{const v=localStorage.getItem("bx_"+k);return v?JSON.parse
 function save(k,v){try{localStorage.setItem("bx_"+k,JSON.stringify(v))}catch(_){}}
 const CFG=Object.assign({unit:"btc",theme:"system"},load("cfg",{}));
 const FAV=load("fav",[]),REC=load("rec",[]),TRK=load("trk",[]),WTRK=load("wtrk",[]);
-let PRICE=null;// fiyat: mempool.space USD fiyatı, USD olarak gösterilir
+let PRICE=null;// price: mempool.space USD price, shown in USD only
 function isDark(){return CFG.theme==="dark"||(CFG.theme==="system"&&matchMedia("(prefers-color-scheme:dark)").matches)}
 function syncBars(){const d=isDark(),m=document.querySelector('meta[name=theme-color]');if(m)m.content=d?"#0d0f1a":"#f3f4fb";
   try{const SB=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.SystemBars;if(SB&&SB.setStyle)Promise.resolve(SB.setStyle({style:d?"DARK":"LIGHT"})).catch(()=>{})}catch(_){}}
@@ -159,15 +159,15 @@ function applyTheme(){const r=document.documentElement;CFG.theme==="system"?r.re
 try{matchMedia("(prefers-color-scheme:dark)").addEventListener("change",syncBars)}catch(_){}
 applyTheme();
 
-const nf=(n,d=0)=>Number(n).toLocaleString("tr-TR",{maximumFractionDigits:d});
-const btc=s=>CFG.unit==="sat"?nf(s):(s/1e8).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:8});
+const nf=(n,d=0)=>Number(n).toLocaleString("en-US",{maximumFractionDigits:d});
+const btc=s=>CFG.unit==="sat"?nf(s):(s/1e8).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:8});
 const U=()=>CFG.unit==="sat"?" sat":" BTC";
-const fv=x=>x==null?"?":x<10?Number(x).toLocaleString("tr-TR",{maximumFractionDigits:1}):String(Math.round(x));
-const rt=v=>Number(v).toLocaleString("tr-TR",{minimumFractionDigits:1,maximumFractionDigits:1});
-const ago=ts=>{const s=Math.max(0,Math.floor(Date.now()/1000-ts));if(s<60)return s+" sn önce";if(s<3600)return Math.floor(s/60)+" dk önce";if(s<86400)return Math.floor(s/3600)+" sa önce";return Math.floor(s/86400)+" gün önce"};
-const when=t=>t.status&&t.status.confirmed?new Date(t.status.block_time*1000).toLocaleString("tr-TR"):"Onay bekliyor";
+const fv=x=>x==null?"?":x<10?Number(x).toLocaleString("en-US",{maximumFractionDigits:1}):String(Math.round(x));
+const rt=v=>Number(v).toLocaleString("en-US",{minimumFractionDigits:1,maximumFractionDigits:1});
+const ago=ts=>{const s=Math.max(0,Math.floor(Date.now()/1000-ts));if(s<60)return s+" s ago";if(s<3600)return Math.floor(s/60)+" m ago";if(s<86400)return Math.floor(s/3600)+" h ago";return Math.floor(s/86400)+" d ago"};
+const when=t=>t.status&&t.status.confirmed?new Date(t.status.block_time*1000).toLocaleString("en-US"):"Awaiting confirmation";
 const short=(s,a=8,b=6)=>s.length>a+b+1?s.slice(0,a)+"…"+s.slice(-b):s;
-// ücret -> renk (yeşil=ucuz, sarı, turuncu, kırmızı, mor=pahalı)
+// fee -> color (green=cheap, yellow, orange, red, purple=expensive)
 function fc(f){f=Math.max(1,f||1);const h=Math.max(-70,140-Math.log2(f)*26);return "hsl("+((h+360)%360)+",85%,62%)"}
 function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e}
 function card(title,cls){const c=el("div","card"+(cls?" "+cls:""));if(title)c.appendChild(el("h2",null,title));return c}
@@ -175,18 +175,18 @@ function row(l,r,cls){const d=el("div","row");d.appendChild(el("span",null,l));d
 function show(...n){out.innerHTML="";n.forEach(x=>out.appendChild(x))}
 function msg(t,err){const c=card();c.appendChild(el("div",err?"err":"muted",t));return c}
 function skeleton(){out.innerHTML="";for(let i=0;i<4;i++)out.appendChild(el("div","shimmer"))}
-function backBtn(){const b=el("button","back","← Geri");b.onclick=()=>{history.state&&history.state.i>0?history.back():go("")};return b}
+function backBtn(){const b=el("button","back","← Back");b.onclick=()=>{history.state&&history.state.i>0?history.back():go("")};return b}
 function withBack(...n){withNav([],...n)}
 const IC='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
 const ICON_COPY=IC+'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>',ICON_OK=IC+'<path d="M5 12l5 5 9-10"/></svg>';
 let toastT;function toast(m){const t=$("toast");t.textContent=m;t.classList.add("on");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("on"),1600)}
 async function copyText(s){try{await navigator.clipboard.writeText(s)}catch(_){const t=document.createElement("textarea");t.value=s;t.style.cssText="position:fixed;opacity:0";document.body.appendChild(t);t.select();try{document.execCommand("copy")}catch(__){}t.remove()}}
-function copyBtn(text,label){const b=el("button","cp");b.type="button";b.setAttribute("aria-label",label||"Kopyala");b.innerHTML=ICON_COPY;
-  b.onclick=async e=>{e.preventDefault();e.stopPropagation();await copyText(text);b.innerHTML=ICON_OK;b.classList.add("done");toast("Kopyalandı");setTimeout(()=>{b.innerHTML=ICON_COPY;b.classList.remove("done")},1500)};return b}
+function copyBtn(text,label){const b=el("button","cp");b.type="button";b.setAttribute("aria-label",label||"Copy");b.innerHTML=ICON_COPY;
+  b.onclick=async e=>{e.preventDefault();e.stopPropagation();await copyText(text);b.innerHTML=ICON_OK;b.classList.add("done");toast("Copied");setTimeout(()=>{b.innerHTML=ICON_COPY;b.classList.remove("done")},1500)};return b}
 function idrow(text,label){const d=el("div","idrow");d.appendChild(el("div","mono",text));d.appendChild(copyBtn(text,label));return d}
 function badge(k,t){return el("span","st "+k,t)}
-function addrRow(addr,val,cls,sign,label){const d=el("div","row"),l=el("div","idrow"),s=el("span","mono",addr||label||"(adres yok)");
-  if(addr){s.style.cursor="pointer";s.setAttribute("role","link");s.tabIndex=0;s.onclick=()=>go("address/"+addr);s.onkeydown=e=>{if(e.key==="Enter")s.onclick()};l.appendChild(s);l.appendChild(copyBtn(addr,"Adresi kopyala"));l.appendChild(walletBtn(addr,()=>get("/address/"+addr).then(walletSt)))}else l.appendChild(s);
+function addrRow(addr,val,cls,sign,label){const d=el("div","row"),l=el("div","idrow"),s=el("span","mono",addr||label||"(no address)");
+  if(addr){s.style.cursor="pointer";s.setAttribute("role","link");s.tabIndex=0;s.onclick=()=>go("address/"+addr);s.onkeydown=e=>{if(e.key==="Enter")s.onclick()};l.appendChild(s);l.appendChild(copyBtn(addr,"Copy address"));l.appendChild(walletBtn(addr,()=>get("/address/"+addr).then(walletSt)))}else l.appendChild(s);
   d.appendChild(l);if(val!=null)d.appendChild(el("span",cls,sign+btc(val)));return d}
 function tag(text,color){const t=el("span","tag",text);t.style.background=color;return t}
 const BS="https://blockstream.info/api";let ALT=false;
@@ -209,7 +209,7 @@ async function get(p){
       if(a){try{const x=await req(BS+a[0]);ALT=true;return a[1](x)}catch(_){}}
       if(!navigator.onLine)$("net").classList.add("on");
       throw e2}}}
-function errText(e){return e&&e.name==="AbortError"?"zaman aşımı":(e&&e.message)||"bilinmeyen hata"}
+function errText(e){return e&&e.name==="AbortError"?"timed out":(e&&e.message)||"unknown error"}
 const PAL=["#f7931a","#5b8cff","#35e0a1","#a66bff","#ff6b6b","#ffd166","#4dd0e1","#8d94b8"];
 
 function chart(points){
@@ -223,18 +223,18 @@ function chart(points){
 }
 
 function hsl(h,s,l){h=(((h%360)+360)%360)/360;const f=n=>{const k=(n+h*12)%12,a=s*Math.min(l,1-l);return (l-a*Math.max(-1,Math.min(k-3,9-k,1)))*255};return [f(0),f(8),f(4)]}
-// İşlemi parçacıklarla çizer: girişler (sol) -> hub -> çıkışlar (sağ), üstte ücret
+// draws the transaction with particles: inputs (left) -> hub -> outputs (right), fee on top
 function txfx(t){
   const wrap=el("div","fx"),cv=el("canvas"),lg=el("div","fxl");
-  cv.setAttribute("aria-label","İşlem akış görseli");wrap.appendChild(cv);wrap.appendChild(lg);
-  [["Giriş","#ff6b6b"],["Çıkış","#35e0a1"],["Ücret","#f7931a"]].forEach(([n,c])=>{const s=el("span");const d=el("i");d.style.background=c;s.appendChild(d);s.appendChild(document.createTextNode(n));lg.appendChild(s)});
-  lg.appendChild(el("b",null,t.vin.length+" giriş → "+t.vout.length+" çıkış"));
+  cv.setAttribute("aria-label","Transaction flow graphic");wrap.appendChild(cv);wrap.appendChild(lg);
+  [["Input","#ff6b6b"],["Output","#35e0a1"],["Fee","#f7931a"]].forEach(([n,c])=>{const s=el("span");const d=el("i");d.style.background=c;s.appendChild(d);s.appendChild(document.createTextNode(n));lg.appendChild(s)});
+  lg.appendChild(el("b",null,t.vin.length+" inputs → "+t.vout.length+" outputs"));
   let gl=null;try{gl=cv.getContext("webgl2",{antialias:false,alpha:false})}catch(e){}
   if(!gl){cv.remove();return wrap}
   try{
   const N=120000,dpr=Math.min(devicePixelRatio||1,2),reduce=matchMedia("(prefers-reduced-motion:reduce)").matches;
   const rn=Math.random,gs=()=>(rn()+rn()+rn()-1.5)/.5;
-  // veri
+  // data
   const ov=t.vout.map(x=>x.value),tot=ov.reduce((a,b)=>a+b,0);
   const I=t.vin.map(x=>x.prevout?x.prevout.value:tot/Math.max(1,t.vin.length)).sort((a,b)=>b-a).slice(0,6);
   const O=ov.slice().sort((a,b)=>b-a).slice(0,8);
@@ -289,7 +289,7 @@ precision mediump float;in vec3 vC;out vec4 o;void main(){vec2 d=gl_PointCoord-.
   const ra=new Uint8Array(N*4);for(let i=0;i<ra.length;i+=65536)crypto.getRandomValues(ra.subarray(i,Math.min(ra.length,i+65536)));
   const rb=mkb(ra);
   const at=(i,b,n,ty,nm)=>{gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.enableVertexAttribArray(i);gl.vertexAttribPointer(i,n,ty,nm,0,0)};
-  // sürükle: yatay döndür
+  // drag: rotate horizontally
   let dry=0,drag=false,lx=0;cv.style.touchAction="pan-y";
   cv.onpointerdown=e=>{drag=true;lx=e.clientX;try{cv.setPointerCapture(e.pointerId)}catch(_){}};
   cv.onpointermove=e=>{if(drag){dry=Math.max(-.9,Math.min(.9,dry+(e.clientX-lx)*.008));lx=e.clientX}};
@@ -317,7 +317,7 @@ precision mediump float;in vec3 vC;out vec4 o;void main(){vec2 d=gl_PointCoord-.
   return wrap;
 }
 
-// ---- ikonlar, eylemler, ayarlar, favori/takip, bildirim
+// ---- icons, actions, settings, favorites/tracking, notifications
 const ICONS={
  star:IC+'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>',
  bell:IC+'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>',
@@ -330,22 +330,22 @@ const isFav=(t,id)=>FAV.some(x=>x.t===t&&x.id===id);
 function toggleFav(t,id){const i=FAV.findIndex(x=>x.t===t&&x.id===id);if(i>=0)FAV.splice(i,1);else FAV.unshift({t,id});save("fav",FAV);return i<0}
 function pushRec(t,id){const i=REC.findIndex(x=>x.t===t&&x.id===id);if(i>=0)REC.splice(i,1);REC.unshift({t,id});REC.length=Math.min(REC.length,12);save("rec",REC)}
 function fillIcon(b,on){const s=b.firstChild;if(s&&s.setAttribute)s.setAttribute("fill",on?"currentColor":"none")}
-function favBtn(t,id){const on=isFav(t,id),b=ib("star","Favorilere ekle / çıkar",null,on);fillIcon(b,on);
-  b.onclick=()=>{const v=toggleFav(t,id);b.classList.toggle("on",v);fillIcon(b,v);toast(v?"Favorilere eklendi":"Favorilerden çıkarıldı")};return b}
+function favBtn(t,id){const on=isFav(t,id),b=ib("star","Add / remove favorite",null,on);fillIcon(b,on);
+  b.onclick=()=>{const v=toggleFav(t,id);b.classList.toggle("on",v);fillIcon(b,v);toast(v?"Added to favorites":"Removed from favorites")};return b}
 const isTrk=id=>TRK.some(x=>x.id===id);
-function trackBtn(id){const on=isTrk(id),b=ib("bell","İşlemi takip et",null,on);fillIcon(b,on);
+function trackBtn(id){const on=isTrk(id),b=ib("bell","Track transaction",null,on);fillIcon(b,on);
   b.onclick=async()=>{const i=TRK.findIndex(x=>x.id===id);let v;if(i>=0){TRK.splice(i,1);v=false}else{TRK.unshift({id,st:0});TRK.length=Math.min(TRK.length,20);v=true;await askNotif()}
-    save("trk",TRK);b.classList.toggle("on",v);fillIcon(b,v);toast(v?"Takipte: onaylanınca bildirim gelir":"Takip bırakıldı")};return b}
+    save("trk",TRK);b.classList.toggle("on",v);fillIcon(b,v);toast(v?"Tracking: you'll be notified when confirmed":"Tracking stopped")};return b}
 async function share(title,url){const S=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.Share;
-  try{if(S){await S.share({title,text:title,url,dialogTitle:"Paylaş"});return}if(navigator.share){await navigator.share({title,url});return}}
+  try{if(S){await S.share({title,text:title,url,dialogTitle:"Share"});return}if(navigator.share){await navigator.share({title,url});return}}
   catch(e){if(e&&/cancel|abort/i.test((e.name||"")+(e.message||"")))return}
-  await copyText(url);toast("Bağlantı kopyalandı")}
-const shareBtn=(title,url)=>ib("share","Paylaş",()=>share(title,url));
+  await copyText(url);toast("Link copied")}
+const shareBtn=(title,url)=>ib("share","Share",()=>share(title,url));
 const EX="https://blockstream.info/";
-// bildirimler
+// notifications
 const LN=()=>window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.LocalNotifications;
 async function askNotif(){const l=LN();try{if(l){const r=await l.checkPermissions();if(r.display!=="granted")await l.requestPermissions();
-    await l.createChannel({id:"tx",name:"İşlem bildirimleri",importance:4})}
+    await l.createChannel({id:"tx",name:"Transaction notifications",importance:4})}
   else if(window.Notification&&Notification.permission==="default")await Notification.requestPermission()}catch(_){}}
 async function notify(title,body){toast(title);const l=LN();
   try{if(l)await l.schedule({notifications:[{id:Math.floor(Math.random()*2e9),title,body,channelId:"tx",schedule:{at:new Date(Date.now()+300)}}]});
@@ -355,29 +355,29 @@ async function pollTracked(){
   let tip;try{tip=await get("/blocks/tip/height")}catch(_){return}
   let ch=false;
   for(const x of act){try{const t=await get("/tx/"+x.id);if(!t.status.confirmed)continue;const n=tip-t.status.block_height+1;
-    if(x.st<1){x.st=1;ch=true;notify("İşlem onaylandı",short(x.id)+" blok #"+nf(t.status.block_height)+" içinde.")}
-    if(x.st<2&&n>=6){x.st=2;ch=true;notify("İşlem 6 onaya ulaştı",short(x.id)+" kesinleşti.")}}catch(_){}}
+    if(x.st<1){x.st=1;ch=true;notify("Transaction confirmed",short(x.id)+" included in block #"+nf(t.status.block_height)+".")}
+    if(x.st<2&&n>=6){x.st=2;ch=true;notify("Transaction reached 6 confirmations",short(x.id)+" is now final.")}}catch(_){}}
   if(ch){save("trk",TRK);if(view==="home")home()}}
-// cüzdan takibi: adreste yeni hareket olunca bildirim
+// wallet tracking: notify on new activity at an address
 const walletSt=i=>{const c=i.chain_stats,m=i.mempool_stats;return{n:c.tx_count+m.tx_count,b:c.funded_txo_sum-c.spent_txo_sum+m.funded_txo_sum-m.spent_txo_sum}};
 const isWal=id=>WTRK.some(x=>x.id===id);
-function walletBtn(id,cur){const b=el("button","cp wt"+(isWal(id)?" on":""));b.type="button";b.setAttribute("aria-label","Cüzdanı takip et / bırak");b.title="Cüzdanı takip et";b.dataset.a=id;b.innerHTML=ICONS.wallet;
+function walletBtn(id,cur){const b=el("button","cp wt"+(isWal(id)?" on":""));b.type="button";b.setAttribute("aria-label","Track / untrack wallet");b.title="Track wallet";b.dataset.a=id;b.innerHTML=ICONS.wallet;
   b.onclick=async e=>{e.preventDefault();e.stopPropagation();const i=WTRK.findIndex(x=>x.id===id);let v;
     if(i>=0){WTRK.splice(i,1);v=false}
-    else{if(WTRK.length>=10){toast("En fazla 10 cüzdan takip edilir");return}
-      let c=cur;if(typeof cur==="function"){try{c=await cur()}catch(_){toast("Adres bilgisi alınamadı");return}}
+    else{if(WTRK.length>=10){toast("You can track up to 10 wallets");return}
+      let c=cur;if(typeof cur==="function"){try{c=await cur()}catch(_){toast("Could not fetch address info");return}}
       if(isWal(id))return;WTRK.unshift({id,n:c.n,b:c.b});v=true;await askNotif()}
-    save("wtrk",WTRK);document.querySelectorAll(".wt").forEach(x=>{if(x.dataset.a===id)x.classList.toggle("on",v)});toast(v?"Cüzdan takipte: yeni hareket olunca bildirim gelir":"Cüzdan takibi bırakıldı")};return b}
+    save("wtrk",WTRK);document.querySelectorAll(".wt").forEach(x=>{if(x.dataset.a===id)x.classList.toggle("on",v)});toast(v?"Wallet tracked: you'll be notified of new activity":"Wallet tracking stopped")};return b}
 let wbusy=false;
 async function pollWallets(){if(wbusy||!WTRK.length)return;wbusy=true;let ch=false;
   try{for(const w of WTRK.slice()){try{const s=walletSt(await get("/address/"+w.id));
-    if(s.n>w.n){const d=s.b-w.b;notify("Cüzdanda yeni hareket",short(w.id)+" · "+(d>=0?"+":"−")+btc(Math.abs(d))+U())}
+    if(s.n>w.n){const d=s.b-w.b;notify("New wallet activity",short(w.id)+" · "+(d>=0?"+":"−")+btc(Math.abs(d))+U())}
     if(s.n!==w.n||s.b!==w.b){w.n=s.n;w.b=s.b;ch=true}}catch(_){}}}
   finally{wbusy=false}
   if(ch){save("wtrk",WTRK);if(view==="home")home()}}
-// sayfa kabuğu: geri + eylemler
+// page shell: back + actions
 function withNav(acts,...n){view="detail";const d=el("div","navrow");d.appendChild(backBtn());const a=el("div","acts");acts.forEach(x=>a.appendChild(x));d.appendChild(a);show(d,...n)}
-// alt sayfa (sheet)
+// bottom sheet
 let sheet=null;
 function closeSheet(){if(sheet){sheet.remove();sheet=null}}
 function openSheet(title,...n){closeSheet();const ov=el("div","ov"),p=el("div","sheetp");ov.onclick=e=>{if(e.target===ov)closeSheet()};
@@ -385,16 +385,16 @@ function openSheet(title,...n){closeSheet();const ov=el("div","ov"),p=el("div","
 function seg(opts,val,on){const d=el("div","seg");opts.forEach(([v,l])=>{const b=el("button",v===val?"on":null,l);b.type="button";b.onclick=()=>{on(v);[...d.children].forEach(x=>x.classList.toggle("on",x===b))};d.appendChild(b)});return d}
 function settings(){
   const grp=(t,opts,key,after)=>{const w=el("div","grp");w.appendChild(el("div","lbl",t));w.appendChild(seg(opts,CFG[key],v=>{CFG[key]=v;save("cfg",CFG);after()}));return w};
-  const info=el("div","muted");info.textContent="Veri: genel Bitcoin ağı API'leri (yedek kaynaklı). Sürüm 1.3";
-  const clr=el("button","more","Yerel verileri sil (favori, geçmiş, takip, cüzdan)");clr.type="button";
-  clr.onclick=()=>{FAV.length=REC.length=TRK.length=WTRK.length=0;["fav","rec","trk","wtrk"].forEach(k=>save(k,[]));toast("Silindi");if(view==="home")home()};
-  openSheet("Ayarlar",grp("Tema",[["system","Sistem"],["light","Açık"],["dark","Koyu"]],"theme",applyTheme),
-    grp("Tutar birimi",[["btc","BTC"],["sat","sat"]],"unit",()=>route()),clr,info)}
-// tutar + fiat
-const fiat=s=>{const p=PRICE&&PRICE.USD;return p?(s/1e8*p).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2})+" USD":""};
+  const info=el("div","muted");info.textContent="Data: public Bitcoin network APIs (with fallback). Version 1.3";
+  const clr=el("button","more","Clear local data (favorites, history, tracking, wallets)");clr.type="button";
+  clr.onclick=()=>{FAV.length=REC.length=TRK.length=WTRK.length=0;["fav","rec","trk","wtrk"].forEach(k=>save(k,[]));toast("Cleared");if(view==="home")home()};
+  openSheet("Settings",grp("Theme",[["system","System"],["light","Light"],["dark","Dark"]],"theme",applyTheme),
+    grp("Amount unit",[["btc","BTC"],["sat","sat"]],"unit",()=>route()),clr,info)}
+// amount + fiat
+const fiat=s=>{const p=PRICE&&PRICE.USD;return p?(s/1e8*p).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})+" USD":""};
 function amtRow(label,sats,cls){const r=el("div","row");r.appendChild(el("span",null,label));const v=el("span","rt");v.appendChild(el("span",cls,btc(sats)+U()));const f=fiat(sats);if(f)v.appendChild(el("small","fi","≈ "+f));r.appendChild(v);return r}
 async function ensurePrice(){if(!PRICE)try{PRICE=await get("/v1/prices")}catch(_){}}
-// adres doğrulama (bech32/bech32m + base58check sağlama toplamı)
+// address validation (bech32/bech32m + base58check checksum)
 const B32="qpzry9x8gf2tvdw0s3jn54khce6mua7l",B58="123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 function pm(v){const G=[0x3b6a57b2,0x26508e6d,0x1ea119fa,0x3d4233dd,0x2a1462b3];let c=1;for(const x of v){const b=c>>>25;c=((c&0x1ffffff)<<5)^x;for(let i=0;i<5;i++)if((b>>>i)&1)c^=G[i]}return c>>>0}
 function bech32ok(s){if(s!==s.toLowerCase()&&s!==s.toUpperCase())return false;s=s.toLowerCase();const i=s.lastIndexOf("1");
@@ -408,28 +408,28 @@ async function b58ok(s){let n=0n;for(const ch of s){const v=B58.indexOf(ch);if(v
   const h=async d=>new Uint8Array(await crypto.subtle.digest("SHA-256",d)),h2=await h(await h(all.slice(0,21)));
   return [0,1,2,3].every(i=>all[21+i]===h2[i])}
 const validAddr=a=>/^bc1/i.test(a)?Promise.resolve(bech32ok(a)):b58ok(a);
-// "Daha fazla yükle"
-function moreBtn(host,shown,total,fetcher){let n=shown;if(n>=total)return;const b=el("button","more","Daha fazla yükle");b.type="button";host.appendChild(b);
-  b.onclick=async()=>{b.disabled=true;b.textContent="Yükleniyor…";try{const r=await fetcher(n);r.forEach(x=>host.insertBefore(x,b));n+=r.length;if(!r.length||n>=total)b.remove();else{b.disabled=false;b.textContent="Daha fazla yükle"}}
-    catch(e){b.disabled=false;b.textContent="Hata: tekrar dene"}}}
+// "Load more"
+function moreBtn(host,shown,total,fetcher){let n=shown;if(n>=total)return;const b=el("button","more","Load more");b.type="button";host.appendChild(b);
+  b.onclick=async()=>{b.disabled=true;b.textContent="Loading…";try{const r=await fetcher(n);r.forEach(x=>host.insertBefore(x,b));n+=r.length;if(!r.length||n>=total)b.remove();else{b.disabled=false;b.textContent="Load more"}}
+    catch(e){b.disabled=false;b.textContent="Error: try again"}}}
 // QR
 function showQR(a){const box=el("div","qr");
-  try{const q=qrcode(0,"M");q.addData("bitcoin:"+a);q.make();box.innerHTML=q.createSvgTag({scalable:true,margin:1})}catch(_){box.textContent="QR oluşturulamadı"}
-  openSheet("Adres QR kodu",box,idrow(a,"Adresi kopyala"))}
-// ana sayfa listeleri
-const TL={tx:"İşlem",address:"Adres",block:"Blok"};
+  try{const q=qrcode(0,"M");q.addData("bitcoin:"+a);q.make();box.innerHTML=q.createSvgTag({scalable:true,margin:1})}catch(_){box.textContent="Could not create QR code"}
+  openSheet("Address QR code",box,idrow(a,"Copy address"))}
+// home page lists
+const TL={tx:"Transaction",address:"Address",block:"Block"};
 function itemRow(it,extra){const r=el("div","row"),l=el("div");r.style.cursor="pointer";r.setAttribute("role","button");r.tabIndex=0;
   l.appendChild(el("div","mono",short(it.id,10,8)));l.appendChild(el("small","muted",TL[it.t]));r.appendChild(l);if(extra)r.appendChild(extra);
   const f=()=>go(it.t+"/"+it.id);r.onclick=f;r.onkeydown=e=>{if(e.key==="Enter")f()};return r}
-// ana sayfa kısayolları (yan menüdeki sayfalarla aynı)
+// home shortcuts (same pages as the side menu)
 function shortcuts(){const g=el("div","sc");
-  [["star","Favoriler","favs",FAV.length],["bell","İşlem takibi","tracked",TRK.length],["wallet","Cüzdan takibi","wallets",WTRK.length],["clock","Son aramalar","recent",REC.length]].forEach(([ic,l,k,n])=>{
+  [["star","Favorites","favs",FAV.length],["bell","Transaction tracking","tracked",TRK.length],["wallet","Wallet tracking","wallets",WTRK.length],["clock","Recent searches","recent",REC.length]].forEach(([ic,l,k,n])=>{
     const b=el("button","sct");b.type="button";b.setAttribute("aria-label",l+(n?" ("+n+")":""));
     const sp=el("span","sci");sp.innerHTML=ICONS[ic];b.appendChild(sp);b.appendChild(el("span","scl",l));
     if(n)b.appendChild(el("span","scn",String(n)));b.onclick=()=>go(k);g.appendChild(b)});
   return g}
 
-// ---- yan menü, geri hareketi
+// ---- side menu, back gesture
 ICONS.menu=IC+'<path d="M4 6h16M4 12h16M4 18h16"/></svg>';
 ICONS.home=IC+'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>';
 ICONS.clock=IC+'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
@@ -437,49 +437,49 @@ ICONS.wallet=IC+'<path d="M3 7a2 2 0 0 1 2-2h12v3"/><path d="M3 7v11a2 2 0 0 0 2
 ICONS.info=IC+'<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg>';
 let drawer=null;
 function closeDrawer(){if(drawer){const d=drawer;drawer=null;d.classList.add("out");setTimeout(()=>d.remove(),180)}}
-function about(){const l=el("div","muted");l.textContent="Bitcoin Explorer 1.3. İşlem, adres ve blok görüntüleyici. Cüzdan değildir; anahtar veya bakiye saklamaz. Veriler genel Bitcoin ağı API'lerinden gelir, kesintide yedek kaynağa geçilir.";openSheet("Hakkında",l)}
+function about(){const l=el("div","muted");l.textContent="Bitcoin Explorer 1.3. A viewer for transactions, addresses and blocks. It is not a wallet and does not store keys or balances. Data comes from public Bitcoin network APIs, with a fallback source if one is down.";openSheet("About",l)}
 function openDrawer(){
   closeSheet();if(drawer)return;
-  const ov=el("div","dov"),p=el("nav","dpanel");p.setAttribute("aria-label","Ana menü");
+  const ov=el("div","dov"),p=el("nav","dpanel");p.setAttribute("aria-label","Main menu");
   ov.onclick=e=>{if(e.target===ov)closeDrawer()};
   const hd=el("div","dhd");hd.appendChild(el("div","logo","₿"));
-  const tt=el("div");tt.appendChild(el("b",null,"Bitcoin Explorer"));tt.appendChild(el("small","muted","Sürüm 1.3"));hd.appendChild(tt);p.appendChild(hd);
+  const tt=el("div");tt.appendChild(el("b",null,"Bitcoin Explorer"));tt.appendChild(el("small","muted","Version 1.3"));hd.appendChild(tt);p.appendChild(hd);
   const cur=location.hash.slice(2).split("/")[0];
   const it=(icon,label,key,fn,n)=>{const b=el("button","ditem"+(key===cur?" on":""));b.type="button";const s=el("span");s.innerHTML=ICONS[icon];b.appendChild(s);b.appendChild(el("span","dl",label));
     if(n)b.appendChild(el("span","dn",String(n)));b.onclick=()=>{closeDrawer();fn()};p.appendChild(b)};
-  it("home","Ana sayfa","",()=>go(""));
-  it("star","Favoriler","favs",()=>go("favs"),FAV.length);
-  it("bell","Takip edilen işlemler","tracked",()=>go("tracked"),TRK.length);
-  it("wallet","Takip edilen cüzdanlar","wallets",()=>go("wallets"),WTRK.length);
-  it("clock","Son aramalar","recent",()=>go("recent"),REC.length);
+  it("home","Home","",()=>go(""));
+  it("star","Favorites","favs",()=>go("favs"),FAV.length);
+  it("bell","Tracked transactions","tracked",()=>go("tracked"),TRK.length);
+  it("wallet","Tracked wallets","wallets",()=>go("wallets"),WTRK.length);
+  it("clock","Recent searches","recent",()=>go("recent"),REC.length);
   p.appendChild(el("div","dsep"));
-  it("set","Ayarlar","_",settings);
-  it("info","Hakkında","_",about);
+  it("set","Settings","_",settings);
+  it("info","About","_",about);
   ov.appendChild(p);document.body.appendChild(ov);drawer=ov;
   let sx=0;p.addEventListener("touchstart",e=>{sx=e.touches[0].clientX},{passive:true});
   p.addEventListener("touchend",e=>{if(sx-e.changedTouches[0].clientX>60)closeDrawer()},{passive:true})}
-// sayfalayıcı: « ‹ 1 2 … 9 › »  (ilk / son sayfa dahil)
-function pager(total,cur,onGo){const w=el("nav","pg");w.setAttribute("aria-label","Sayfalama");
+// pager: « ‹ 1 2 … 9 › »  (includes first / last page)
+function pager(total,cur,onGo){const w=el("nav","pg");w.setAttribute("aria-label","Pagination");
   const mk=(l,p,dis,on,al)=>{const b=el("button","pgb"+(on?" on":""),l);b.type="button";b.disabled=!!dis;b.setAttribute("aria-label",al);if(on)b.setAttribute("aria-current","page");b.onclick=()=>onGo(p);return b};
   const arr=total<=7?Array.from({length:total},(_,i)=>i):[...new Set([0,total-1,cur-1,cur,cur+1])].filter(n=>n>=0&&n<total).sort((a,b)=>a-b);
-  w.appendChild(mk("«",0,cur===0,0,"İlk sayfa"));w.appendChild(mk("‹",cur-1,cur===0,0,"Önceki sayfa"));
-  let pv=-1;arr.forEach(n=>{if(pv>=0&&n-pv>1)w.appendChild(el("span","pge","…"));w.appendChild(mk(String(n+1),n,0,n===cur,"Sayfa "+(n+1)));pv=n});
-  w.appendChild(mk("›",cur+1,cur>=total-1,0,"Sonraki sayfa"));w.appendChild(mk("»",total-1,cur>=total-1,0,"Son sayfa"));return w}
-// sayfalı liste: kart + altta sayfalayıcı. fetchPage(i) dizi (önbellekten) ya da Promise döner
+  w.appendChild(mk("«",0,cur===0,0,"First page"));w.appendChild(mk("‹",cur-1,cur===0,0,"Previous page"));
+  let pv=-1;arr.forEach(n=>{if(pv>=0&&n-pv>1)w.appendChild(el("span","pge","…"));w.appendChild(mk(String(n+1),n,0,n===cur,"Page "+(n+1)));pv=n});
+  w.appendChild(mk("›",cur+1,cur>=total-1,0,"Next page"));w.appendChild(mk("»",total-1,cur>=total-1,0,"Last page"));return w}
+// paged list: card + pager below. fetchPage(i) returns an array (from cache) or a Promise
 function pagedList(title,total,per,fetchPage,row,opts){opts=opts||{};
   const wrap=el("div"),c=card(title),body=el("div"),ph=el("div","pgh");c.appendChild(body);wrap.appendChild(c);wrap.appendChild(ph);
   const pages=Math.max(1,Math.ceil(total/per));let tk=0;
-  const fill=items=>{body.innerHTML="";if(!items.length)body.appendChild(el("div","muted","İşlem yok."));items.forEach(x=>body.appendChild(row(x)))};
+  const fill=items=>{body.innerHTML="";if(!items.length)body.appendChild(el("div","muted","No transactions."));items.forEach(x=>body.appendChild(row(x)))};
   function open(p,scroll){const my=++tk;p=Math.max(0,Math.min(pages-1,p));if(opts.onPage)opts.onPage(p);
     ph.innerHTML="";if(pages>1)ph.appendChild(pager(pages,p,q=>open(q,true)));
     const after=()=>{if(scroll)wrap.scrollIntoView({behavior:"smooth",block:"start"})};
     let r;try{r=fetchPage(p)}catch(e){r=Promise.reject(e)}
     if(Array.isArray(r)){fill(r);after();return}
     body.innerHTML="";for(let i=0;i<3;i++){const sh=el("div","shimmer");sh.style.height="56px";body.appendChild(sh)}after();
-    r.then(x=>{if(my===tk)fill(x)}).catch(e=>{if(my!==tk)return;body.innerHTML="";body.appendChild(el("div","err","Yüklenemedi ("+errText(e)+")"));
-      const b=el("button","more","Tekrar dene");b.type="button";b.onclick=()=>open(p);body.appendChild(b)})}
+    r.then(x=>{if(my===tk)fill(x)}).catch(e=>{if(my!==tk)return;body.innerHTML="";body.appendChild(el("div","err","Failed to load ("+errText(e)+")"));
+      const b=el("button","more","Try again");b.type="button";b.onclick=()=>open(p);body.appendChild(b)})}
   open(Math.min(opts.start||0,pages-1),false);return wrap}
-// bloktaki işlemler (25'lik sayfalar), bellekte önbellek
+// block transactions (pages of 25), cached in memory
 const BP=new Map();let RP=0;
 function blockTxs(hash,p){const k=hash+":"+p,c=BP.get(k);if(c)return c;
   return get("/block/"+hash+"/txs/"+p*25).then(x=>{BP.set(k,x);if(BP.size>60)BP.delete(BP.keys().next().value);return x})}
@@ -490,7 +490,7 @@ function recentRow(t){const a=el("a","tx");a.href="#";a.onclick=e=>{e.preventDef
   r.appendChild(lf);r.appendChild(el("span","in",btc(t.vout.reduce((s,o)=>s+o.value,0))+U()));a.appendChild(r);return a}
 function listPage(title,items,empty,extra){view="detail";const c=card(title);if(!items.length)c.appendChild(el("div","muted",empty));
   items.forEach(x=>c.appendChild(itemRow(x,extra&&extra(x))));withBack(c)}
-// tek hareketle geri: menü > alt sayfa > önceki sayfa > ana sayfa
+// one-step back: menu > sheet > previous page > home
 function goBack(){if(drawer){closeDrawer();return true}if(sheet){closeSheet();return true}
   if(history.state&&history.state.i>0){history.back();return true}if(view!=="home"){go("");return true}return false}
 
@@ -502,20 +502,20 @@ async function home(force){
   const res=await Promise.allSettled(urls.map(u=>get(u)));
   if(view!=="home")return;
   if(res.every(r=>r.status==="rejected")){
-    const c=msg("Bağlantı kurulamadı ("+errText(res[0].reason)+").",true);
-    const b=el("button",null,"Tekrar dene");b.style.cssText="margin-top:10px;padding:10px 16px";b.onclick=()=>home(true);
+    const c=msg("Could not connect ("+errText(res[0].reason)+").",true);
+    const b=el("button",null,"Try again");b.style.cssText="margin-top:10px;padding:10px 16px";b.onclick=()=>home(true);
     c.appendChild(b);show(c);return;
   }
   const d={};keys.forEach((k,i)=>d[k]=res[i].status==="fulfilled"?res[i].value:null);
   const y=window.scrollY,nodes=[];if(d.price)PRICE=d.price;
-  $("upd").textContent=new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});$("upd").parentNode.classList.toggle("alt",ALT);$("upd").parentNode.title="Son güncelleme"+(ALT?" · yedek kaynak kullanılıyor":"");
+  $("upd").textContent=new Date().toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit"});$("upd").parentNode.classList.toggle("alt",ALT);$("upd").parentNode.title="Last updated"+(ALT?" · using fallback source":"");
 
   // Hero
   const hero=card(null,"hero");const top=el("div","top");
-  const l=el("div");l.appendChild(el("div","lbl","Blok yüksekliği"));
+  const l=el("div");l.appendChild(el("div","lbl","Block height"));
   const b0=d.blocks&&d.blocks[0];
   l.appendChild(el("div","big",b0?nf(b0.height):"—"));
-  const s=el("div","muted");s.appendChild(document.createTextNode("Son blok: "));
+  const s=el("div","muted");s.appendChild(document.createTextNode("Latest block: "));
   const sp=el("span",null,b0?ago(b0.timestamp):"—");sp.id="since";s.appendChild(sp);l.appendChild(s);
   if(b0)lastTs=b0.timestamp;
   top.appendChild(l);
@@ -527,50 +527,50 @@ async function home(force){
     hero.appendChild(ch)}
   nodes.push(shortcuts(),hero);
 
-  // Ücretler
-  const fcard=card("Ücret tahmini (sat/vB)");const g=el("div","grid");
+  // Fees
+  const fcard=card("Fee estimate (sat/vB)");const g=el("div","grid");
   const f=d.fees||{};
-  [["Hızlı",f.fastestFee],["~30 dk",f.halfHourFee],["~1 saat",f.hourFee]].forEach(([n,v])=>{
+  [["Fast",f.fastestFee],["~30 min",f.halfHourFee],["~1 hour",f.hourFee]].forEach(([n,v])=>{
     const x=el("div","tile");x.style.background=fc(v);
 x.appendChild(el("b",null,v!=null?v:"—"));x.appendChild(el("small",null,n));g.appendChild(x)});
   fcard.appendChild(g);
-  if(d.mempool){fcard.appendChild(row("Bekleyen işlem",nf(d.mempool.count)));fcard.appendChild(row("Bekleyen boyut",(d.mempool.vsize/1e6).toFixed(2)+" MvB"))}
+  if(d.mempool){fcard.appendChild(row("Pending transactions",nf(d.mempool.count)));fcard.appendChild(row("Pending size",(d.mempool.vsize/1e6).toFixed(2)+" MvB"))}
   nodes.push(fcard);
 
   // Mempool harita
   if(d.mblocks&&d.mblocks.length){
-    const mc=card("Sıradaki bloklar");const sc=el("div","scroll");
+    const mc=card("Upcoming blocks");const sc=el("div","scroll");
     d.mblocks.slice(0,8).forEach((b,i)=>{
       const k=el("div","cube");k.style.background=fc(b.medianFee);
       k.appendChild(el("b",null,"~"+fv(b.medianFee)+" sat/vB"));
       k.appendChild(el("div",null,fv(b.feeRange[0])+" – "+fv(b.feeRange[b.feeRange.length-1])));
-      k.appendChild(el("div",null,nf(b.nTx)+" işlem"));
-      k.appendChild(el("div",null,"₿ "+(b.totalFees/1e8).toFixed(3)+" ücret"));
+      k.appendChild(el("div",null,nf(b.nTx)+" txs"));
+      k.appendChild(el("div",null,"₿ "+(b.totalFees/1e8).toFixed(3)+" fees"));
       k.appendChild(el("div",null,"≈ "+(i+1)*10+" dk"));
       sc.appendChild(k)});
-    mc.appendChild(sc);mc.appendChild(el("div","sub","Renk: yeşil ucuz → turuncu → kırmızı pahalı ücret"));nodes.push(mc);
+    mc.appendChild(sc);mc.appendChild(el("div","sub","Color: green = cheap → orange → red = expensive fees"));nodes.push(mc);
   }
 
   // Son bloklar
   if(d.blocks){
-    const bc=card("Son bloklar");const sc=el("div","scroll");
+    const bc=card("Recent blocks");const sc=el("div","scroll");
     d.blocks.slice(0,12).forEach(b=>{
       const ex=b.extras||{},fill=Math.min(100,(b.weight||b.size*4)/4e4);
       const k=el("div","cube blk");k.style.background="linear-gradient(to top,"+fc(ex.medianFee)+" "+fill+"%,var(--ce) "+fill+"%)";
       k.appendChild(el("b",null,"#"+nf(b.height)));
       k.appendChild(el("div",null,"~"+fv(ex.medianFee)+" sat/vB"));
-      k.appendChild(el("div",null,nf(b.tx_count)+" işlem"));
+      k.appendChild(el("div",null,nf(b.tx_count)+" txs"));
       k.appendChild(el("div",null,(b.size/1e6).toFixed(2)+" MB"));
       if(ex.pool&&ex.pool.name)k.appendChild(el("div",null,ex.pool.name));
       k.appendChild(el("div",null,ago(b.timestamp)));
-      k.onclick=()=>go("block/"+b.id);k.setAttribute("role","button");k.tabIndex=0;k.setAttribute("aria-label","Blok "+b.height);k.onkeydown=e=>{if(e.key==="Enter")k.onclick()};sc.appendChild(k);
+      k.onclick=()=>go("block/"+b.id);k.setAttribute("role","button");k.tabIndex=0;k.setAttribute("aria-label","Block "+b.height);k.onkeydown=e=>{if(e.key==="Enter")k.onclick()};sc.appendChild(k);
     });
-    bc.appendChild(sc);bc.appendChild(el("div","sub","Dolgu seviyesi bloğun doluluk oranını gösterir"));nodes.push(bc);
+    bc.appendChild(sc);bc.appendChild(el("div","sub","Fill level shows how full the block is"));nodes.push(bc);
 
-    // Pool dağılımı
-    const cnt={};d.blocks.forEach(b=>{const n=(b.extras&&b.extras.pool&&b.extras.pool.name)||"Bilinmiyor";cnt[n]=(cnt[n]||0)+1});
+    // Pool distribution
+    const cnt={};d.blocks.forEach(b=>{const n=(b.extras&&b.extras.pool&&b.extras.pool.name)||"Unknown";cnt[n]=(cnt[n]||0)+1});
     const ent=Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
-    const pc=card("Madencilik havuzları (son "+d.blocks.length+" blok)");
+    const pc=card("Mining pools (last "+d.blocks.length+" blocks)");
     const st=el("div","stack");
     ent.forEach(([n,c],i)=>{const s=el("div");s.style.cssText="flex:"+c+";background:"+PAL[Math.min(i,PAL.length-1)];st.appendChild(s)});
     pc.appendChild(st);
@@ -581,31 +581,31 @@ x.appendChild(el("b",null,v!=null?v:"—"));x.appendChild(el("small",null,n));g.
 
   // Hashrate
   if(d.hash&&d.hash.hashrates&&d.hash.hashrates.length>2){
-    const hc=card("Hashrate (3 ay)");
+    const hc=card("Hashrate (3 months)");
     hc.appendChild(el("div","big",nf(d.hash.currentHashrate/1e18,0)+" EH/s"));
     hc.appendChild(chart(d.hash.hashrates.map(x=>x.avgHashrate)));nodes.push(hc);
   }
 
   // Zorluk + halving
   if(d.diff||b0){
-    const dc=card("Zorluk ayarlaması");
+    const dc=card("Difficulty adjustment");
     if(d.diff){const df=d.diff;
       const bar=el("div","bar");const i=el("i");i.style.width=Math.min(100,df.progressPercent)+"%";bar.appendChild(i);dc.appendChild(bar);
-      dc.appendChild(row("İlerleme","%"+df.progressPercent.toFixed(1)));
-      dc.appendChild(row("Kalan blok",nf(df.remainingBlocks)));
-      dc.appendChild(row("Tahmini değişim",(df.difficultyChange>=0?"+":"")+df.difficultyChange.toFixed(2)+"%",df.difficultyChange>=0?"in":"out"));
-      dc.appendChild(row("Tahmini tarih",new Date(df.estimatedRetargetDate).toLocaleDateString("tr-TR",{day:"numeric",month:"long"})))}
+      dc.appendChild(row("Progress","%"+df.progressPercent.toFixed(1)));
+      dc.appendChild(row("Blocks remaining",nf(df.remainingBlocks)));
+      dc.appendChild(row("Estimated change",(df.difficultyChange>=0?"+":"")+df.difficultyChange.toFixed(2)+"%",df.difficultyChange>=0?"in":"out"));
+      dc.appendChild(row("Estimated date",new Date(df.estimatedRetargetDate).toLocaleDateString("en-US",{day:"numeric",month:"long"})))}
     if(b0){const rem=1050000-b0.height,days=rem*10/1440;
-      const hv=card("Sonraki halving");
+      const hv=card("Next halving");
       const hb=el("div","bar");const hi=el("i");hi.style.width=((b0.height-840000)/2100)+"%";hb.appendChild(hi);hv.appendChild(hb);
-      hv.appendChild(row("Kalan blok",nf(rem)));
-      hv.appendChild(row("Tahmini süre","≈ "+nf(days/365,1)+" yıl ("+nf(days)+" gün)"));
-      hv.appendChild(row("Yeni ödül","1,5625 BTC / blok","in"));
+      hv.appendChild(row("Blocks remaining",nf(rem)));
+      hv.appendChild(row("Estimated time","≈ "+nf(days/365,1)+" years ("+nf(days)+" days)"));
+      hv.appendChild(row("New reward","1.5625 BTC / block","in"));
       nodes.push(dc,hv)}else nodes.push(dc);
   }
 
-  // Son işlemler: son bloktaki ilk 100 işlem (4 sayfa x 25)
-  if(b0)nodes.push(pagedList("Son işlemler · blok #"+nf(b0.height),Math.min(100,b0.tx_count||100),25,p=>blockTxs(b0.id,p),recentRow,{start:RP,onPage:p=>{RP=p}}));
+  // Latest transactions: first 100 txs of the latest block (4 pages x 25)
+  if(b0)nodes.push(pagedList("Latest transactions · block #"+nf(b0.height),Math.min(100,b0.tx_count||100),25,p=>blockTxs(b0.id,p),recentRow,{start:RP,onPage:p=>{RP=p}}));
   show(...nodes);window.scrollTo(0,y);
 }
 
@@ -619,9 +619,9 @@ function txItem(tx,addr){
   const a=el("a","tx");a.href="#";
   a.onclick=e=>{e.preventDefault();go("tx/"+tx.txid)};
   const w=el("div"),top=el("div","row");
-  if(addr){const n=net(tx,addr);top.appendChild(el("span",n>=0?"in":"out",(n>=0?"+":"−")+btc(n)+U()))}
+  if(addr){const n=net(tx,addr);top.appendChild(el("span",n>=0?"in":"out",(n>=0?"+":"−")+btc(Math.abs(n))+U()))}
   else top.appendChild(el("span",null,btc(tx.vout.reduce((s,o)=>s+o.value,0))+U()));
-  top.appendChild(tx.status&&tx.status.confirmed?badge("ok","Onaylı"):badge("wait","Bekliyor"));
+  top.appendChild(tx.status&&tx.status.confirmed?badge("ok","Confirmed"):badge("wait","Pending"));
   w.appendChild(top);if(tx.status&&tx.status.confirmed)w.appendChild(el("div","muted",when(tx)));w.appendChild(el("div","mono",tx.txid));
   a.appendChild(w);return a;
 }
@@ -632,75 +632,75 @@ async function block(id){
     const [b,txs]=await Promise.all([get("/block/"+id),get("/block/"+id+"/txs"),ensurePrice()]);
     pushRec("block",id);
     const ex=b.extras||{},fill=Math.min(100,(b.weight||b.size*4)/4e4);
-    const c=card("Blok "+nf(b.height));c.appendChild(idrow(id,"Blok hash'ini kopyala"));
+    const c=card("Block "+nf(b.height));c.appendChild(idrow(id,"Copy block hash"));
     const bar=el("div","bar");const i=el("i");i.style.width=fill+"%";bar.appendChild(i);c.appendChild(bar);
-    c.appendChild(row("Doluluk","%"+fill.toFixed(1)));
-    c.appendChild(row("Zaman",new Date(b.timestamp*1000).toLocaleString("tr-TR")));
-    if(ex.pool&&ex.pool.name)c.appendChild(row("Madenci",ex.pool.name));
-    c.appendChild(row("İşlem sayısı",nf(b.tx_count)));
-    c.appendChild(row("Boyut",(b.size/1e6).toFixed(2)+" MB"));
-    if(ex.medianFee!=null)c.appendChild(row("Medyan ücret",fv(ex.medianFee)+" sat/vB"));
-    if(ex.totalFees!=null)c.appendChild(amtRow("Toplam ücret",ex.totalFees,"in"));
+    c.appendChild(row("Fill","%"+fill.toFixed(1)));
+    c.appendChild(row("Time",new Date(b.timestamp*1000).toLocaleString("en-US")));
+    if(ex.pool&&ex.pool.name)c.appendChild(row("Miner",ex.pool.name));
+    c.appendChild(row("Transaction count",nf(b.tx_count)));
+    c.appendChild(row("Size",(b.size/1e6).toFixed(2)+" MB"));
+    if(ex.medianFee!=null)c.appendChild(row("Median fee",fv(ex.medianFee)+" sat/vB"));
+    if(ex.totalFees!=null)c.appendChild(amtRow("Total fees",ex.totalFees,"in"));
     BP.set(id+":0",txs);
-    const l=pagedList("İşlemler",b.tx_count,25,p=>blockTxs(id,p),t=>txItem(t));
-    withNav([favBtn("block",id),shareBtn("Bitcoin bloğu #"+b.height,EX+"block/"+id)],c,l);
-  }catch(e){withBack(msg("Blok alınamadı ("+errText(e)+").",true))}
+    const l=pagedList("Transactions",b.tx_count,25,p=>blockTxs(id,p),t=>txItem(t));
+    withNav([favBtn("block",id),shareBtn("Bitcoin block #"+b.height,EX+"block/"+id)],c,l);
+  }catch(e){withBack(msg("Could not load block ("+errText(e)+").",true))}
 }
 
 async function address(a){
   const [info,txs]=await Promise.all([get("/address/"+a),get("/address/"+a+"/txs"),ensurePrice()]);
   pushRec("address",a);
   const cs=info.chain_stats,ms=info.mempool_stats,bal=cs.funded_txo_sum-cs.spent_txo_sum;
-  const c1=card("Adres","hero");
-  const ir=idrow(a,"Adresi kopyala");ir.firstChild.style.color=ir.lastChild.style.color="rgba(255,255,255,.85)";ir.appendChild(walletBtn(a,walletSt(info)));c1.appendChild(ir);
+  const c1=card("Address","hero");
+  const ir=idrow(a,"Copy address");ir.firstChild.style.color=ir.lastChild.style.color="rgba(255,255,255,.85)";ir.appendChild(walletBtn(a,walletSt(info)));c1.appendChild(ir);
   c1.appendChild(el("div","big",btc(bal)+U()));
   const f=fiat(bal);if(f)c1.appendChild(el("div","muted","≈ "+f));
   const c1b=card();
-  c1b.appendChild(row("İşlem sayısı",nf(cs.tx_count+ms.tx_count)));
-  c1b.appendChild(amtRow("Toplam alınan",cs.funded_txo_sum,"in"));
-  c1b.appendChild(amtRow("Toplam gönderilen",cs.spent_txo_sum,"out"));
-  if(ms.tx_count)c1b.appendChild(row("Onay bekleyen",ms.tx_count+" işlem","out"));
-  const c2=card("İşlemler");
-  if(!txs.length)c2.appendChild(el("div","muted","İşlem yok."));
+  c1b.appendChild(row("Transaction count",nf(cs.tx_count+ms.tx_count)));
+  c1b.appendChild(amtRow("Total received",cs.funded_txo_sum,"in"));
+  c1b.appendChild(amtRow("Total sent",cs.spent_txo_sum,"out"));
+  if(ms.tx_count)c1b.appendChild(row("Unconfirmed",ms.tx_count+" txs","out"));
+  const c2=card("Transactions");
+  if(!txs.length)c2.appendChild(el("div","muted","No transactions."));
   txs.forEach(t=>c2.appendChild(txItem(t,a)));
   const conf=txs.filter(t=>t.status&&t.status.confirmed);let last=conf.length?conf[conf.length-1].txid:null;
   if(last)moreBtn(c2,conf.length,cs.tx_count,async()=>{const r=await get("/address/"+a+"/txs/chain/"+last);if(r.length)last=r[r.length-1].txid;return r.map(t=>txItem(t,a))});
-  withNav([favBtn("address",a),ib("qr","QR kod",()=>showQR(a)),shareBtn("Bitcoin adresi",EX+"address/"+a)],c1,c1b,c2);
+  withNav([favBtn("address",a),ib("qr","QR code",()=>showQR(a)),shareBtn("Bitcoin address",EX+"address/"+a)],c1,c1b,c2);
 }
 
 async function tx(id){
   let t;
   try{t=await get("/tx/"+id)}catch(e){
     if(!/404/.test(e.message))throw e;
-    const c=card("İşlem");c.appendChild(idrow(id,"İşlem ID'sini kopyala"));
-    const r=el("div","row");r.appendChild(el("span",null,"Durum"));r.appendChild(badge("bad","Bulunamadı"));c.appendChild(r);
-    c.appendChild(el("div","muted","Bu ID ağda görünmüyor. İşlem reddedilmiş, ağdan düşmüş ya da henüz yayılmamış olabilir."));
+    const c=card("Transaction");c.appendChild(idrow(id,"Copy transaction ID"));
+    const r=el("div","row");r.appendChild(el("span",null,"Status"));r.appendChild(badge("bad","Not found"));c.appendChild(r);
+    c.appendChild(el("div","muted","This ID is not visible on the network. The transaction may have been rejected, dropped from the network, or not propagated yet."));
     withBack(c);return}
   await ensurePrice();pushRec("tx",id);
   const total=t.vout.reduce((s,o)=>s+o.value,0),rate=t.fee/(t.weight?t.weight/4:t.size);
   let st,rb=null;
-  if(t.status.confirmed){const tip=await get("/blocks/tip/height").catch(()=>null);st=badge("ok",tip?"Onaylandı · "+nf(tip-t.status.block_height+1)+" onay":"Onaylandı")}
-  else{const r=await get("/v1/tx/"+id+"/rbf").catch(()=>null);rb=r&&r.replacements&&r.replacements.tx&&r.replacements.tx.txid;st=rb?badge("bad","Değiştirildi (RBF)"):badge("wait","Onay bekliyor")}
-  const c=card("İşlem");c.appendChild(idrow(id,"İşlem ID'sini kopyala"));
-  const sr=el("div","row");sr.appendChild(el("span",null,"Durum"));sr.appendChild(st);c.appendChild(sr);
-  if(rb){const x=row("Değiştiren işlem",short(rb),"mono");x.style.cursor="pointer";x.onclick=()=>go("tx/"+rb);c.appendChild(x)}
-  if(t.status.confirmed){c.appendChild(row("Zaman",when(t)));const x=row("Blok","#"+nf(t.status.block_height),"in");x.style.cursor="pointer";x.onclick=()=>go("block/"+t.status.block_hash);c.appendChild(x)}
-  c.appendChild(amtRow("Toplam çıkış",total,"" ));
-  const fr=el("div","row");fr.appendChild(el("span",null,"Ücret"));
+  if(t.status.confirmed){const tip=await get("/blocks/tip/height").catch(()=>null);st=badge("ok",tip?"Confirmed · "+nf(tip-t.status.block_height+1)+" confirmations":"Confirmed")}
+  else{const r=await get("/v1/tx/"+id+"/rbf").catch(()=>null);rb=r&&r.replacements&&r.replacements.tx&&r.replacements.tx.txid;st=rb?badge("bad","Replaced (RBF)"):badge("wait","Awaiting confirmation")}
+  const c=card("Transaction");c.appendChild(idrow(id,"Copy transaction ID"));
+  const sr=el("div","row");sr.appendChild(el("span",null,"Status"));sr.appendChild(st);c.appendChild(sr);
+  if(rb){const x=row("Replacing transaction",short(rb),"mono");x.style.cursor="pointer";x.onclick=()=>go("tx/"+rb);c.appendChild(x)}
+  if(t.status.confirmed){c.appendChild(row("Time",when(t)));const x=row("Block","#"+nf(t.status.block_height),"in");x.style.cursor="pointer";x.onclick=()=>go("block/"+t.status.block_hash);c.appendChild(x)}
+  c.appendChild(amtRow("Total output",total,"" ));
+  const fr=el("div","row");fr.appendChild(el("span",null,"Fee"));
   const fv=el("span","rt"),fw=el("span");fw.appendChild(document.createTextNode(nf(t.fee)+" sat "));fw.appendChild(tag(rt(rate)+" sat/vB",fc(rate)));fv.appendChild(fw);
   const ff=fiat(t.fee);if(ff)fv.appendChild(el("small","fi","≈ "+ff));fr.appendChild(fv);c.appendChild(fr);
-  c.appendChild(row("Giriş / çıkış",t.vin.length+" / "+t.vout.length));
-  c.appendChild(row("Boyut",t.size+" bayt"));
-  const ins=card("Girişler"),o=card("Çıkışlar");
-  t.vin.slice(0,20).forEach(x=>ins.appendChild(addrRow(x.is_coinbase?null:x.prevout&&x.prevout.scriptpubkey_address,x.prevout?x.prevout.value:null,"out","−",x.is_coinbase?"Coinbase (yeni basılan)":null)));
-  if(t.vin.length>20)ins.appendChild(el("div","muted","+"+(t.vin.length-20)+" giriş daha"));
+  c.appendChild(row("Inputs / outputs",t.vin.length+" / "+t.vout.length));
+  c.appendChild(row("Size",t.size+" bytes"));
+  const ins=card("Inputs"),o=card("Outputs");
+  t.vin.slice(0,20).forEach(x=>ins.appendChild(addrRow(x.is_coinbase?null:x.prevout&&x.prevout.scriptpubkey_address,x.prevout?x.prevout.value:null,"out","−",x.is_coinbase?"Coinbase (newly minted)":null)));
+  if(t.vin.length>20)ins.appendChild(el("div","muted","+"+(t.vin.length-20)+" more inputs"));
   t.vout.slice(0,30).forEach(x=>o.appendChild(addrRow(x.scriptpubkey_address,x.value,"in","+")));
-  if(t.vout.length>30)o.appendChild(el("div","muted","+"+(t.vout.length-30)+" çıkış daha"));
-  const acts=[];if(!t.status.confirmed)acts.push(trackBtn(id));acts.push(favBtn("tx",id),shareBtn("Bitcoin işlemi",EX+"tx/"+id));
+  if(t.vout.length>30)o.appendChild(el("div","muted","+"+(t.vout.length-30)+" more outputs"));
+  const acts=[];if(!t.status.confirmed)acts.push(trackBtn(id));acts.push(favBtn("tx",id),shareBtn("Bitcoin transaction",EX+"tx/"+id));
   withNav(acts,txfx(t),c,ins,o);
 }
 
-// ---- yönlendirme: geri tuşu / kenardan kaydırma tarayıcı geçmişiyle çalışır
+// ---- routing: back button / edge swipe use browser history
 let idx=0,rid=0;const scrolls={};
 history.replaceState({i:0},"");
 function go(p){closeSheet();closeDrawer();const same=p===""?(!location.hash||location.hash==="#/"):location.hash==="#/"+p;
@@ -712,12 +712,12 @@ async function route(){
     if(k==="tx"){view="detail";$("q").value=a;skeleton();await tx(a)}
     else if(k==="address"){view="detail";$("q").value=a;skeleton();await address(a)}
     else if(k==="block"){await block(a)}
-    else if(k==="favs"){$("q").value="";listPage("Favoriler",FAV,"Henüz favori yok. Adres, işlem veya blok sayfasında yıldıza dokun.")}
-    else if(k==="tracked"){$("q").value="";listPage("Takip edilen işlemler",TRK.map(x=>({t:"tx",id:x.id,st:x.st})),"Takip edilen işlem yok. Bekleyen bir işlemin sayfasında zil simgesine dokun.",x=>x.st>0?badge("ok","Onaylı"):badge("wait","Bekliyor"))}
-    else if(k==="wallets"){$("q").value="";listPage("Takip edilen cüzdanlar",WTRK.map(x=>({t:"address",id:x.id,b:x.b})),"Takip edilen cüzdan yok. Bir adres sayfasında kopyala simgesinin yanındaki cüzdan simgesine dokun.",x=>el("span","in",btc(x.b)+U()))}
-    else if(k==="recent"){$("q").value="";listPage("Son aramalar",REC,"Henüz arama yok.")}
+    else if(k==="favs"){$("q").value="";listPage("Favorites",FAV,"No favorites yet. Tap the star on an address, transaction or block page.")}
+    else if(k==="tracked"){$("q").value="";listPage("Tracked transactions",TRK.map(x=>({t:"tx",id:x.id,st:x.st})),"No tracked transactions. Tap the bell icon on a pending transaction's page.",x=>x.st>0?badge("ok","Confirmed"):badge("wait","Pending"))}
+    else if(k==="wallets"){$("q").value="";listPage("Tracked wallets",WTRK.map(x=>({t:"address",id:x.id,b:x.b})),"No tracked wallets. On an address page, tap the wallet icon next to the copy icon.",x=>el("span","in",btc(x.b)+U()))}
+    else if(k==="recent"){$("q").value="";listPage("Recent searches",REC,"No searches yet.")}
     else{$("q").value="";await home(true)}
-  }catch(e){if(my===rid)withBack(msg("Sonuç alınamadı ("+errText(e)+"). Adresi kontrol et veya biraz sonra tekrar dene.",true))}
+  }catch(e){if(my===rid)withBack(msg("Could not get result ("+errText(e)+"). Check the address or try again shortly.",true))}
   window.scrollTo(0,y);
 }
 addEventListener("popstate",e=>{closeSheet();closeDrawer();idx=(e.state&&e.state.i)||0;route()});
@@ -731,23 +731,23 @@ async function search(){
   const bad=m=>{view="detail";withBack(msg(m,true))};
   if(/^[0-9a-fA-F]{64}$/.test(q))go("tx/"+q);
   else if(/^\d{1,7}$/.test(q)){view="detail";skeleton();
-    try{go("block/"+await get("/block-height/"+q))}catch(e){bad(/404/.test(e.message)?"Bu yükseklikte blok yok.":"Blok alınamadı ("+errText(e)+").")}}
+    try{go("block/"+await get("/block-height/"+q))}catch(e){bad(/404/.test(e.message)?"No block at this height.":"Could not load block ("+errText(e)+").")}}
   else if(/^(bc1|BC1|[13])[a-zA-HJ-NP-Z0-9]{25,90}$/.test(q)){
-    if(await validAddr(q))go("address/"+q);else bad("Adres sağlama toplamı (checksum) hatalı. Bir karakter yanlış yazılmış olabilir.")}
-  else bad("Geçerli bir adres, 64 karakterlik işlem ID veya blok numarası gir.")
+    if(await validAddr(q))go("address/"+q);else bad("Address checksum is invalid. A character may be mistyped.")}
+  else bad("Enter a valid address, a 64-character transaction ID or a block number.")
 }
 $("go").onclick=search;
 $("title").onclick=()=>go("");
 $("q").addEventListener("keydown",e=>{if(e.key==="Enter")search()});
 setInterval(()=>{const s=$("since");if(s&&lastTs)s.textContent=ago(lastTs)},1000);
 setInterval(()=>{if(view==="home"&&!document.hidden)home()},30000);
-// çevrimdışı şeridi, aşağı çekip yenileme, bildirim kanalı, takip yoklaması
+// offline banner, pull to refresh, notification channel, tracking poll
 addEventListener("offline",()=>$("net").classList.add("on"));
 addEventListener("online",()=>{$("net").classList.remove("on");route()});
 {const ptr=$("ptr");let py=0,pull=false;
   addEventListener("touchstart",e=>{const t=e.touches[0];pull=window.scrollY<=0&&t.clientX>=24&&!sheet;py=t.clientY},{passive:true});
-  addEventListener("touchmove",e=>{if(!pull)return;const d=e.touches[0].clientY-py;if(d>0&&window.scrollY<=0){ptr.style.opacity=Math.min(1,d/90);ptr.style.transform="translate(-50%,"+Math.min(d/2,50)+"px)";ptr.textContent=d>90?"Bırak: yenile":"Yenilemek için çek"}},{passive:true});
-  addEventListener("touchend",e=>{if(!pull)return;pull=false;const d=e.changedTouches[0].clientY-py;ptr.style.opacity=0;ptr.style.transform="translate(-50%,0)";if(d>90&&window.scrollY<=0){toast("Yenileniyor");route()}},{passive:true})}
+  addEventListener("touchmove",e=>{if(!pull)return;const d=e.touches[0].clientY-py;if(d>0&&window.scrollY<=0){ptr.style.opacity=Math.min(1,d/90);ptr.style.transform="translate(-50%,"+Math.min(d/2,50)+"px)";ptr.textContent=d>90?"Release to refresh":"Pull to refresh"}},{passive:true});
+  addEventListener("touchend",e=>{if(!pull)return;pull=false;const d=e.changedTouches[0].clientY-py;ptr.style.opacity=0;ptr.style.transform="translate(-50%,0)";if(d>90&&window.scrollY<=0){toast("Refreshing");route()}},{passive:true})}
 $("menu").innerHTML=ICONS.menu;$("menu").onclick=openDrawer;
 $("title").onkeydown=e=>{if(e.key==="Enter")go("")};
 {const AP=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App;if(AP&&AP.addListener)AP.addListener("backButton",()=>{if(!goBack())AP.exitApp()})}

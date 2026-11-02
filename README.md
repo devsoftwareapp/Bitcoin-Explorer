@@ -29,9 +29,13 @@ Web arayüzü `www/` klasöründedir.
 - Ayarlar: tema, BTC/sat. Fiyatlar sadece USD olarak gösterilir (EUR/GBP yok)
 - Blockstream yedek API
 
-## İmzalı release APK
-Actions → "Android Release APK (imzali)". Kalıcı imza için repo secret'ları: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`.
-Secret yoksa geçici anahtarla imzalanır (her sürümde farklı, güncelleme olarak kurulmaz).
+## İmzalı release (AAB + APK)
+Actions → "Android Release (AAB + APK, signed)". Her çalışmada iki ayrı artifact üretilir:
+- `bitcoin-explorer-release-aab` (Google Play için AAB)
+- `bitcoin-explorer-release-apk` (doğrudan kurulabilir APK)
+
+Kalıcı imza için repo secret'ları: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` (dördü de olmalı).
+Secret'lar eksikse geçici anahtarla imzalanır (her sürümde farklı, güncelleme olarak kurulmaz).
 Not: Takip bildirimleri uygulama açıkken/arka planda canlıyken çalışır; Android uygulamayı tamamen uyutursa bildirim gecikebilir.
 
 ## v1.2
