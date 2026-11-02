@@ -4,29 +4,33 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0d0f1a">
+<meta name="color-scheme" content="light dark">
 <title>Bitcoin Explorer</title>
 <style>
-:root{--ok:#35e0a1;--warn:#f7931a;--bad:#ff6b6b;--bg:#0d0f1a;--bg2:#161a2e;--card:#1a1f36;--card2:#222849;--text:#f1f3ff;--muted:#8d94b8;--line:#2b3157;--accent:#f7931a;--accent2:#ffb347;--in:#35e0a1;--out:#ff6b6b;--blue:#5b8cff;--violet:#a66bff;--glow:0 6px 24px rgba(247,147,26,.18)}
-@media (prefers-color-scheme:light){:root:not([data-theme]){--ok:#0f9d6b;--warn:#d97706;--bad:#d93a3a;--bg:#f3f4fb;--bg2:#e9ebf8;--card:#fff;--card2:#f1f3fc;--text:#1a1d33;--muted:#6a7091;--line:#dfe2f2;--in:#0f9d6b;--out:#d93a3a;--glow:0 6px 20px rgba(247,147,26,.2)}}
-:root[data-theme=light]{--ok:#0f9d6b;--warn:#d97706;--bad:#d93a3a;--bg:#f3f4fb;--bg2:#e9ebf8;--card:#fff;--card2:#f1f3fc;--text:#1a1d33;--muted:#6a7091;--line:#dfe2f2;--in:#0f9d6b;--out:#d93a3a;--glow:0 6px 20px rgba(247,147,26,.2)}
+:root{color-scheme:light dark;--sh:0 1px 2px rgba(0,0,0,.28),0 8px 22px rgba(0,0,0,.18);--ce:rgba(214,219,246,.72);--ok:#35e0a1;--warn:#f7931a;--bad:#ff6b6b;--bg:#0d0f1a;--bg2:#161a2e;--card:#1a1f36;--card2:#222849;--text:#f1f3ff;--muted:#8d94b8;--line:#2b3157;--accent:#f7931a;--accent2:#ffb347;--in:#35e0a1;--out:#ff6b6b;--blue:#5b8cff;--violet:#a66bff;--glow:0 6px 24px rgba(247,147,26,.18)}
+@media (prefers-color-scheme:light){:root:not([data-theme]){--ok:#0f9d6b;--warn:#d97706;--bad:#d93a3a;--bg:#f3f4fb;--bg2:#e9ebf8;--card:#fff;--card2:#f1f3fc;--text:#1a1d33;--muted:#5b6183;--line:#dcdff0;--in:#0f9d6b;--out:#d93a3a;--sh:0 1px 2px rgba(26,29,51,.06),0 10px 28px rgba(26,29,51,.08);--ce:rgba(127,127,160,.28);--glow:0 6px 20px rgba(247,147,26,.2)}}
+:root[data-theme=dark]{color-scheme:dark}
+:root[data-theme=light]{color-scheme:light;--ce:rgba(127,127,160,.28);--sh:0 1px 2px rgba(26,29,51,.06),0 10px 28px rgba(26,29,51,.08);--ok:#0f9d6b;--warn:#d97706;--bad:#d93a3a;--bg:#f3f4fb;--bg2:#e9ebf8;--card:#fff;--card2:#f1f3fc;--text:#1a1d33;--muted:#5b6183;--line:#dcdff0;--in:#0f9d6b;--out:#d93a3a;--glow:0 6px 20px rgba(247,147,26,.2)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
-body{margin:0;background:radial-gradient(1200px 500px at 80% -10%,rgba(166,107,255,.18),transparent 60%),radial-gradient(900px 500px at -10% 0,rgba(247,147,26,.16),transparent 55%),var(--bg);background-attachment:fixed;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);min-height:100vh}
+body{margin:0;background:radial-gradient(1200px 500px at 80% -10%,rgba(166,107,255,.18),transparent 60%),radial-gradient(900px 500px at -10% 0,rgba(247,147,26,.16),transparent 55%),var(--bg);background-attachment:fixed;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);min-height:100vh;font-variant-numeric:tabular-nums;-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:color-mix(in srgb,var(--bg) 84%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);z-index:12;pointer-events:none}
 main{max-width:600px;margin:0 auto;padding:16px 14px 40px}
 header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-.logo{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#ffb347,#f7931a 60%,#e5740a);display:grid;place-items:center;font-weight:800;font-size:22px;color:#fff;box-shadow:var(--glow)}
-h1{font-size:22px;margin:0;font-weight:800;letter-spacing:-.02em}
+header .ib{flex:none}
+.logo{flex:none;width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#ffb347,#f7931a 60%,#e5740a);display:grid;place-items:center;font-weight:800;font-size:22px;color:#fff;box-shadow:var(--glow)}
+h1{font-size:20px;margin:0;font-weight:800;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 h1 span{background:linear-gradient(90deg,#ffb347,#f7931a,#ff6b6b);-webkit-background-clip:text;background-clip:text;color:transparent}
-.live{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
-.dot{width:9px;height:9px;border-radius:50%;background:var(--in);box-shadow:0 0 0 0 var(--in);animation:pulse 1.8s infinite}
+.live{flex:none;margin-left:auto;display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:99px;padding:6px 11px;white-space:nowrap}
+.dot{--dc:var(--in);width:8px;height:8px;border-radius:50%;background:var(--dc);box-shadow:0 0 0 0 var(--dc);animation:pulse 1.8s infinite}.live.alt .dot{--dc:var(--warn)}
 @keyframes pulse{70%{box-shadow:0 0 0 9px transparent}100%{box-shadow:0 0 0 0 transparent}}
 .search{display:flex;gap:8px;margin-bottom:14px}
-input{flex:1;min-width:0;padding:14px 16px;font-size:15px;border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--text);outline:none}
+input{-webkit-appearance:none;appearance:none;flex:1;min-width:0;padding:14px 16px;font-size:15px;border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--text);outline:none}
 input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(247,147,26,.2)}
 button{font:inherit;border:0;border-radius:16px;background:linear-gradient(135deg,#ffb347,#f7931a);color:#1a1200;font-weight:700;padding:0 20px;cursor:pointer;box-shadow:var(--glow)}
 button:active{transform:scale(.97)}
 .back{background:var(--card);color:var(--text);border:1px solid var(--line);padding:10px 16px;margin-bottom:12px;font-weight:600;box-shadow:none}
-.card{background:linear-gradient(160deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:20px;padding:16px;margin-bottom:14px;animation:up .4s both}
+.card{background:linear-gradient(160deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:20px;padding:16px;margin-bottom:14px;box-shadow:var(--sh);animation:up .4s both}
 .fx{background:#0b0d18;border:1px solid var(--line);border-radius:20px;overflow:hidden;margin-bottom:14px;animation:up .4s both}
 .fx canvas{display:block;width:100%;height:230px}
 .fxl{display:flex;gap:14px;align-items:center;padding:10px 14px;font-size:12px;color:#9aa0c3}
@@ -53,10 +57,10 @@ button:active{transform:scale(.97)}
 .in{color:var(--in);font-weight:700}.out{color:var(--out);font-weight:700}
 .err{color:var(--out)}.muted{color:var(--muted);font-size:13px}
 a.tx{color:inherit;text-decoration:none;display:block}
-.scroll{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 8px;scroll-snap-type:x proximity}
+.scroll{display:flex;gap:10px;overflow-x:auto;margin:0 -16px;padding:2px 16px 16px;scroll-padding:0 16px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 14px,#000 calc(100% - 14px),transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 14px,#000 calc(100% - 14px),transparent 100%)}
 .scroll::-webkit-scrollbar{display:none}
-.cube{flex:none;width:112px;border-radius:16px;padding:10px;color:#10131f;font-size:12px;font-weight:600;cursor:default;scroll-snap-align:start;box-shadow:0 4px 14px rgba(0,0,0,.25)}
-.cube b{display:block;font-size:17px;font-weight:800;margin-bottom:2px}
+.cube{flex:none;width:124px;border-radius:16px;padding:10px;color:#10131f;font-size:12px;font-weight:600;cursor:default;scroll-snap-align:start;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.cube b{display:block;font-size:16px;font-weight:800;margin-bottom:2px;white-space:nowrap}
 .cube div{opacity:.85;line-height:1.5}
 .blk{cursor:pointer;position:relative;overflow:hidden}
 .blk:active{transform:scale(.97)}
@@ -78,7 +82,7 @@ svg.chart{width:100%;height:110px;display:block}
 .cp.wt.on{color:var(--accent)}.hero .cp{color:rgba(255,255,255,.85)}.hero .cp.wt.on{background:rgba(255,255,255,.3);color:#fff;border-radius:10px}
 #toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--text);color:var(--bg);padding:9px 16px;border-radius:99px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:.25s;z-index:9}
 #toast.on{opacity:1;transform:translate(-50%,0)}
-.brand{display:flex;align-items:center;gap:10px;cursor:pointer}
+.brand{display:flex;align-items:center;gap:9px;cursor:pointer;flex:1;min-width:0}
 .live .ib{width:36px;height:36px;border-radius:12px;margin-left:6px}
 .navrow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}.navrow .back{margin:0}
 .acts{display:flex;gap:8px}
@@ -112,7 +116,7 @@ svg.chart{width:100%;height:110px;display:block}
 .dn{background:var(--bg2);border:1px solid var(--line);border-radius:99px;padding:1px 9px;font-size:12px;color:var(--muted)}
 .dsep{height:1px;background:var(--line);margin:8px 6px}
 .sc{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-.sct{position:relative;display:flex;align-items:center;gap:10px;min-width:0;padding:10px 12px;border-radius:16px;background:linear-gradient(160deg,var(--card),var(--card2));border:1px solid var(--line);color:var(--text);box-shadow:none;font-size:14px;font-weight:600;text-align:left;animation:up .4s both}
+.sct{box-shadow:var(--sh);position:relative;display:flex;align-items:center;gap:10px;min-width:0;padding:10px 12px;border-radius:16px;background:linear-gradient(160deg,var(--card),var(--card2));border:1px solid var(--line);color:var(--text);font-size:14px;font-weight:600;text-align:left;animation:up .4s both}
 .sci{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:var(--bg2);color:var(--accent);flex:none}.sci svg{width:18px;height:18px}
 .scl{min-width:0;line-height:1.2}
 .scn{position:absolute;top:-6px;right:-4px;min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:linear-gradient(135deg,#ffb347,#f7931a);color:#1a1200;font-size:11px;font-weight:800;display:grid;place-items:center}
@@ -129,7 +133,7 @@ svg.chart{width:100%;height:110px;display:block}
 <main>
   <header><button id="menu" class="ib" type="button" aria-label="Menüyü aç" aria-haspopup="true"></button><div id="title" class="brand" role="button" tabindex="0" aria-label="Ana sayfa"><div class="logo">₿</div><h1>Bitcoin <span>Explorer</span></h1></div><div class="live"><i class="dot"></i><span id="upd">canlı</span></div></header>
   <div class="search">
-    <input id="q" placeholder="Adres, işlem ID veya blok no" aria-label="Adres, işlem ID veya blok numarası" autocapitalize="off" autocomplete="off" spellcheck="false">
+    <input id="q" type="search" enterkeyhint="search" placeholder="Adres, işlem ID veya blok no" aria-label="Adres, işlem ID veya blok numarası" autocapitalize="off" autocomplete="off" spellcheck="false">
     <button id="go" aria-label="Ara">Ara</button>
   </div>
   <div id="out"></div>
@@ -148,12 +152,18 @@ function save(k,v){try{localStorage.setItem("bx_"+k,JSON.stringify(v))}catch(_){
 const CFG=Object.assign({unit:"btc",theme:"system"},load("cfg",{}));
 const FAV=load("fav",[]),REC=load("rec",[]),TRK=load("trk",[]),WTRK=load("wtrk",[]);
 let PRICE=null;// fiyat: mempool.space USD fiyatı, USD olarak gösterilir
-function applyTheme(){const r=document.documentElement;CFG.theme==="system"?r.removeAttribute("data-theme"):r.setAttribute("data-theme",CFG.theme)}
+function isDark(){return CFG.theme==="dark"||(CFG.theme==="system"&&matchMedia("(prefers-color-scheme:dark)").matches)}
+function syncBars(){const d=isDark(),m=document.querySelector('meta[name=theme-color]');if(m)m.content=d?"#0d0f1a":"#f3f4fb";
+  try{const SB=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.SystemBars;if(SB&&SB.setStyle)Promise.resolve(SB.setStyle({style:d?"DARK":"LIGHT"})).catch(()=>{})}catch(_){}}
+function applyTheme(){const r=document.documentElement;CFG.theme==="system"?r.removeAttribute("data-theme"):r.setAttribute("data-theme",CFG.theme);syncBars()}
+try{matchMedia("(prefers-color-scheme:dark)").addEventListener("change",syncBars)}catch(_){}
 applyTheme();
 
 const nf=(n,d=0)=>Number(n).toLocaleString("tr-TR",{maximumFractionDigits:d});
 const btc=s=>CFG.unit==="sat"?nf(s):(s/1e8).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:8});
 const U=()=>CFG.unit==="sat"?" sat":" BTC";
+const fv=x=>x==null?"?":x<10?Number(x).toLocaleString("tr-TR",{maximumFractionDigits:1}):String(Math.round(x));
+const rt=v=>Number(v).toLocaleString("tr-TR",{minimumFractionDigits:1,maximumFractionDigits:1});
 const ago=ts=>{const s=Math.max(0,Math.floor(Date.now()/1000-ts));if(s<60)return s+" sn önce";if(s<3600)return Math.floor(s/60)+" dk önce";if(s<86400)return Math.floor(s/3600)+" sa önce";return Math.floor(s/86400)+" gün önce"};
 const when=t=>t.status&&t.status.confirmed?new Date(t.status.block_time*1000).toLocaleString("tr-TR"):"Onay bekliyor";
 const short=(s,a=8,b=6)=>s.length>a+b+1?s.slice(0,a)+"…"+s.slice(-b):s;
@@ -476,7 +486,7 @@ function blockTxs(hash,p){const k=hash+":"+p,c=BP.get(k);if(c)return c;
 function recentRow(t){const a=el("a","tx");a.href="#";a.onclick=e=>{e.preventDefault();go("tx/"+t.txid)};
   const r=el("div","row"),lf=el("div");lf.appendChild(el("div","mono",short(t.txid)));
   if(t.vin&&t.vin[0]&&t.vin[0].is_coinbase)lf.appendChild(tag("Coinbase","#ffd166"));
-  else{const rate=t.fee/((t.weight||t.size*4)/4);lf.appendChild(tag(rate.toFixed(1)+" sat/vB",fc(rate)))}
+  else{const rate=t.fee/((t.weight||t.size*4)/4);lf.appendChild(tag(rt(rate)+" sat/vB",fc(rate)))}
   r.appendChild(lf);r.appendChild(el("span","in",btc(t.vout.reduce((s,o)=>s+o.value,0))+U()));a.appendChild(r);return a}
 function listPage(title,items,empty,extra){view="detail";const c=card(title);if(!items.length)c.appendChild(el("div","muted",empty));
   items.forEach(x=>c.appendChild(itemRow(x,extra&&extra(x))));withBack(c)}
@@ -498,7 +508,7 @@ async function home(force){
   }
   const d={};keys.forEach((k,i)=>d[k]=res[i].status==="fulfilled"?res[i].value:null);
   const y=window.scrollY,nodes=[];if(d.price)PRICE=d.price;
-  $("upd").textContent="güncellendi "+new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"})+(ALT?" · yedek kaynak":"");
+  $("upd").textContent=new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"});$("upd").parentNode.classList.toggle("alt",ALT);$("upd").parentNode.title="Son güncelleme"+(ALT?" · yedek kaynak kullanılıyor":"");
 
   // Hero
   const hero=card(null,"hero");const top=el("div","top");
@@ -532,8 +542,8 @@ x.appendChild(el("b",null,v!=null?v:"—"));x.appendChild(el("small",null,n));g.
     const mc=card("Sıradaki bloklar");const sc=el("div","scroll");
     d.mblocks.slice(0,8).forEach((b,i)=>{
       const k=el("div","cube");k.style.background=fc(b.medianFee);
-      k.appendChild(el("b",null,"~"+Math.round(b.medianFee)+" sat/vB"));
-      k.appendChild(el("div",null,Math.round(b.feeRange[0])+" – "+Math.round(b.feeRange[b.feeRange.length-1])));
+      k.appendChild(el("b",null,"~"+fv(b.medianFee)+" sat/vB"));
+      k.appendChild(el("div",null,fv(b.feeRange[0])+" – "+fv(b.feeRange[b.feeRange.length-1])));
       k.appendChild(el("div",null,nf(b.nTx)+" işlem"));
       k.appendChild(el("div",null,"₿ "+(b.totalFees/1e8).toFixed(3)+" ücret"));
       k.appendChild(el("div",null,"≈ "+(i+1)*10+" dk"));
@@ -546,9 +556,9 @@ x.appendChild(el("b",null,v!=null?v:"—"));x.appendChild(el("small",null,n));g.
     const bc=card("Son bloklar");const sc=el("div","scroll");
     d.blocks.slice(0,12).forEach(b=>{
       const ex=b.extras||{},fill=Math.min(100,(b.weight||b.size*4)/4e4);
-      const k=el("div","cube blk");k.style.background="linear-gradient(to top,"+fc(ex.medianFee)+" "+fill+"%,rgba(127,127,160,.28) "+fill+"%)";
+      const k=el("div","cube blk");k.style.background="linear-gradient(to top,"+fc(ex.medianFee)+" "+fill+"%,var(--ce) "+fill+"%)";
       k.appendChild(el("b",null,"#"+nf(b.height)));
-      k.appendChild(el("div",null,"~"+(ex.medianFee!=null?Math.round(ex.medianFee):"?")+" sat/vB"));
+      k.appendChild(el("div",null,"~"+fv(ex.medianFee)+" sat/vB"));
       k.appendChild(el("div",null,nf(b.tx_count)+" işlem"));
       k.appendChild(el("div",null,(b.size/1e6).toFixed(2)+" MB"));
       if(ex.pool&&ex.pool.name)k.appendChild(el("div",null,ex.pool.name));
@@ -629,7 +639,7 @@ async function block(id){
     if(ex.pool&&ex.pool.name)c.appendChild(row("Madenci",ex.pool.name));
     c.appendChild(row("İşlem sayısı",nf(b.tx_count)));
     c.appendChild(row("Boyut",(b.size/1e6).toFixed(2)+" MB"));
-    if(ex.medianFee!=null)c.appendChild(row("Medyan ücret",Math.round(ex.medianFee)+" sat/vB"));
+    if(ex.medianFee!=null)c.appendChild(row("Medyan ücret",fv(ex.medianFee)+" sat/vB"));
     if(ex.totalFees!=null)c.appendChild(amtRow("Toplam ücret",ex.totalFees,"in"));
     BP.set(id+":0",txs);
     const l=pagedList("İşlemler",b.tx_count,25,p=>blockTxs(id,p),t=>txItem(t));
@@ -677,7 +687,7 @@ async function tx(id){
   if(t.status.confirmed){c.appendChild(row("Zaman",when(t)));const x=row("Blok","#"+nf(t.status.block_height),"in");x.style.cursor="pointer";x.onclick=()=>go("block/"+t.status.block_hash);c.appendChild(x)}
   c.appendChild(amtRow("Toplam çıkış",total,"" ));
   const fr=el("div","row");fr.appendChild(el("span",null,"Ücret"));
-  const fv=el("span","rt"),fw=el("span");fw.appendChild(document.createTextNode(nf(t.fee)+" sat "));fw.appendChild(tag(rate.toFixed(1)+" sat/vB",fc(rate)));fv.appendChild(fw);
+  const fv=el("span","rt"),fw=el("span");fw.appendChild(document.createTextNode(nf(t.fee)+" sat "));fw.appendChild(tag(rt(rate)+" sat/vB",fc(rate)));fv.appendChild(fw);
   const ff=fiat(t.fee);if(ff)fv.appendChild(el("small","fi","≈ "+ff));fr.appendChild(fv);c.appendChild(fr);
   c.appendChild(row("Giriş / çıkış",t.vin.length+" / "+t.vout.length));
   c.appendChild(row("Boyut",t.size+" bayt"));

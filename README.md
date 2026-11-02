@@ -44,3 +44,4 @@ Not: Takip bildirimleri uygulama açıkken/arka planda canlıyken çalışır; A
 - compileSdk/targetSdk 37, minSdk 24, JDK 25, AGP 9.1.1, Gradle 9.3.1
 - Sayfalama: ana sayfada son bloktaki ilk 100 işlem (4 sayfa x 25), blok sayfasında tüm işlemler; altta « ‹ 1 2 3 › » sayfalayıcı (ilk/son sayfa dahil), sayfa değişince listenin başına yumuşak kayar
 - Ana sayfada arama kutusuyla blok kartı arasında kısayollar: Favoriler, İşlem takibi, Cüzdan takibi, Son aramalar (sayı rozetli). Eski liste kartları kaldırıldı, hepsi kendi sayfasında
+- Görünüm cilası: tek satırlık başlık ve kompakt durum hapı, durum çubuğu perdesi, uygulama temasıyla uyumlu sistem çubuğu simgeleri, açık/koyu temada okunur kartlar ve gölgeler, kenara taşan yatay kaydırıcılar, düşük ücretlerde ondalıklı gösterim (0,3 sat/vB)
