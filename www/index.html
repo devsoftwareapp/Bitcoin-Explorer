@@ -111,6 +111,11 @@ svg.chart{width:100%;height:110px;display:block}
 .ditem svg{width:22px;height:22px}.ditem.on{background:var(--card2);color:var(--accent)}.ditem .dl{flex:1}
 .dn{background:var(--bg2);border:1px solid var(--line);border-radius:99px;padding:1px 9px;font-size:12px;color:var(--muted)}
 .dsep{height:1px;background:var(--line);margin:8px 6px}
+.pgh{margin:2px 0 20px}.pg{display:flex;justify-content:center;flex-wrap:wrap;gap:5px}
+.pgb{min-width:36px;height:40px;padding:0 6px;border-radius:14px;background:var(--card);color:var(--text);border:1px solid var(--line);box-shadow:none;font-weight:700;font-size:15px}
+.pgb.on{background:linear-gradient(135deg,#ffb347,#f7931a);color:#1a1200;border-color:transparent;box-shadow:var(--glow)}
+.pgb:disabled{opacity:.35;cursor:default}.pgb:disabled:active{transform:none}
+.pge{align-self:center;color:var(--muted);padding:0 1px}
 </style>
 
 
@@ -436,6 +441,36 @@ function openDrawer(){
   ov.appendChild(p);document.body.appendChild(ov);drawer=ov;
   let sx=0;p.addEventListener("touchstart",e=>{sx=e.touches[0].clientX},{passive:true});
   p.addEventListener("touchend",e=>{if(sx-e.changedTouches[0].clientX>60)closeDrawer()},{passive:true})}
+// sayfalayıcı: « ‹ 1 2 … 9 › »  (ilk / son sayfa dahil)
+function pager(total,cur,onGo){const w=el("nav","pg");w.setAttribute("aria-label","Sayfalama");
+  const mk=(l,p,dis,on,al)=>{const b=el("button","pgb"+(on?" on":""),l);b.type="button";b.disabled=!!dis;b.setAttribute("aria-label",al);if(on)b.setAttribute("aria-current","page");b.onclick=()=>onGo(p);return b};
+  const arr=total<=7?Array.from({length:total},(_,i)=>i):[...new Set([0,total-1,cur-1,cur,cur+1])].filter(n=>n>=0&&n<total).sort((a,b)=>a-b);
+  w.appendChild(mk("«",0,cur===0,0,"İlk sayfa"));w.appendChild(mk("‹",cur-1,cur===0,0,"Önceki sayfa"));
+  let pv=-1;arr.forEach(n=>{if(pv>=0&&n-pv>1)w.appendChild(el("span","pge","…"));w.appendChild(mk(String(n+1),n,0,n===cur,"Sayfa "+(n+1)));pv=n});
+  w.appendChild(mk("›",cur+1,cur>=total-1,0,"Sonraki sayfa"));w.appendChild(mk("»",total-1,cur>=total-1,0,"Son sayfa"));return w}
+// sayfalı liste: kart + altta sayfalayıcı. fetchPage(i) dizi (önbellekten) ya da Promise döner
+function pagedList(title,total,per,fetchPage,row,opts){opts=opts||{};
+  const wrap=el("div"),c=card(title),body=el("div"),ph=el("div","pgh");c.appendChild(body);wrap.appendChild(c);wrap.appendChild(ph);
+  const pages=Math.max(1,Math.ceil(total/per));let tk=0;
+  const fill=items=>{body.innerHTML="";if(!items.length)body.appendChild(el("div","muted","İşlem yok."));items.forEach(x=>body.appendChild(row(x)))};
+  function open(p,scroll){const my=++tk;p=Math.max(0,Math.min(pages-1,p));if(opts.onPage)opts.onPage(p);
+    ph.innerHTML="";if(pages>1)ph.appendChild(pager(pages,p,q=>open(q,true)));
+    const after=()=>{if(scroll)wrap.scrollIntoView({behavior:"smooth",block:"start"})};
+    let r;try{r=fetchPage(p)}catch(e){r=Promise.reject(e)}
+    if(Array.isArray(r)){fill(r);after();return}
+    body.innerHTML="";for(let i=0;i<3;i++){const sh=el("div","shimmer");sh.style.height="56px";body.appendChild(sh)}after();
+    r.then(x=>{if(my===tk)fill(x)}).catch(e=>{if(my!==tk)return;body.innerHTML="";body.appendChild(el("div","err","Yüklenemedi ("+errText(e)+")"));
+      const b=el("button","more","Tekrar dene");b.type="button";b.onclick=()=>open(p);body.appendChild(b)})}
+  open(Math.min(opts.start||0,pages-1),false);return wrap}
+// bloktaki işlemler (25'lik sayfalar), bellekte önbellek
+const BP=new Map();let RP=0;
+function blockTxs(hash,p){const k=hash+":"+p,c=BP.get(k);if(c)return c;
+  return get("/block/"+hash+"/txs/"+p*25).then(x=>{BP.set(k,x);if(BP.size>60)BP.delete(BP.keys().next().value);return x})}
+function recentRow(t){const a=el("a","tx");a.href="#";a.onclick=e=>{e.preventDefault();go("tx/"+t.txid)};
+  const r=el("div","row"),lf=el("div");lf.appendChild(el("div","mono",short(t.txid)));
+  if(t.vin&&t.vin[0]&&t.vin[0].is_coinbase)lf.appendChild(tag("Coinbase","#ffd166"));
+  else{const rate=t.fee/((t.weight||t.size*4)/4);lf.appendChild(tag(rate.toFixed(1)+" sat/vB",fc(rate)))}
+  r.appendChild(lf);r.appendChild(el("span","in",btc(t.vout.reduce((s,o)=>s+o.value,0))+U()));a.appendChild(r);return a}
 function listPage(title,items,empty,extra){view="detail";const c=card(title);if(!items.length)c.appendChild(el("div","muted",empty));
   items.forEach(x=>c.appendChild(itemRow(x,extra&&extra(x))));withBack(c)}
 // tek hareketle geri: menü > alt sayfa > önceki sayfa > ana sayfa
@@ -445,8 +480,8 @@ function goBack(){if(drawer){closeDrawer();return true}if(sheet){closeSheet();re
 async function home(force){
   view="home";
   if(force||!out.firstChild)skeleton();
-  const keys=["fees","blocks","mempool","recent","diff","price","mblocks","hash"];
-  const urls=["/v1/fees/recommended","/v1/blocks","/mempool","/mempool/recent","/v1/difficulty-adjustment","/v1/prices","/v1/fees/mempool-blocks","/v1/mining/hashrate/3m"];
+  const keys=["fees","blocks","mempool","diff","price","mblocks","hash"];
+  const urls=["/v1/fees/recommended","/v1/blocks","/mempool","/v1/difficulty-adjustment","/v1/prices","/v1/fees/mempool-blocks","/v1/mining/hashrate/3m"];
   const res=await Promise.allSettled(urls.map(u=>get(u)));
   if(view!=="home")return;
   if(res.every(r=>r.status==="rejected")){
@@ -552,19 +587,8 @@ x.appendChild(el("b",null,v!=null?v:"—"));x.appendChild(el("small",null,n));g.
       nodes.push(dc,hv)}else nodes.push(dc);
   }
 
-  // Son işlemler
-  if(d.recent){
-    const rc=card("Son işlemler");
-    d.recent.slice(0,10).forEach(t=>{
-      const a=el("a","tx");a.href="#";a.onclick=e=>{e.preventDefault();go("tx/"+t.txid)};
-      const r=el("div","row");const lf=el("div");
-      lf.appendChild(el("div","mono",short(t.txid)));
-      const rate=t.fee/t.vsize;lf.appendChild(tag(rate.toFixed(1)+" sat/vB",fc(rate)));
-      r.appendChild(lf);r.appendChild(el("span","in",btc(t.value)+U()));
-      a.appendChild(r);rc.appendChild(a);
-    });
-    nodes.push(rc);
-  }
+  // Son işlemler: son bloktaki ilk 100 işlem (4 sayfa x 25)
+  if(b0)nodes.push(pagedList("Son işlemler · blok #"+nf(b0.height),Math.min(100,b0.tx_count||100),25,p=>blockTxs(b0.id,p),recentRow,{start:RP,onPage:p=>{RP=p}}));
   show(...nodes);window.scrollTo(0,y);
 }
 
@@ -600,8 +624,8 @@ async function block(id){
     c.appendChild(row("Boyut",(b.size/1e6).toFixed(2)+" MB"));
     if(ex.medianFee!=null)c.appendChild(row("Medyan ücret",Math.round(ex.medianFee)+" sat/vB"));
     if(ex.totalFees!=null)c.appendChild(amtRow("Toplam ücret",ex.totalFees,"in"));
-    const l=card("İşlemler");txs.forEach(t=>l.appendChild(txItem(t)));
-    moreBtn(l,txs.length,b.tx_count,async n=>(await get("/block/"+id+"/txs/"+n)).map(t=>txItem(t)));
+    BP.set(id+":0",txs);
+    const l=pagedList("İşlemler",b.tx_count,25,p=>blockTxs(id,p),t=>txItem(t));
     withNav([favBtn("block",id),shareBtn("Bitcoin bloğu #"+b.height,EX+"block/"+id)],c,l);
   }catch(e){withBack(msg("Blok alınamadı ("+errText(e)+").",true))}
 }
