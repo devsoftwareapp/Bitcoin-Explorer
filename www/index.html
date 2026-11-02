@@ -171,7 +171,7 @@ function copyBtn(text,label){const b=el("button","cp");b.type="button";b.setAttr
 function idrow(text,label){const d=el("div","idrow");d.appendChild(el("div","mono",text));d.appendChild(copyBtn(text,label));return d}
 function badge(k,t){return el("span","st "+k,t)}
 function addrRow(addr,val,cls,sign,label){const d=el("div","row"),l=el("div","idrow"),s=el("span","mono",addr||label||"(adres yok)");
-  if(addr){s.style.cursor="pointer";s.setAttribute("role","link");s.tabIndex=0;s.onclick=()=>go("address/"+addr);s.onkeydown=e=>{if(e.key==="Enter")s.onclick()};l.appendChild(s);l.appendChild(copyBtn(addr,"Adresi kopyala"))}else l.appendChild(s);
+  if(addr){s.style.cursor="pointer";s.setAttribute("role","link");s.tabIndex=0;s.onclick=()=>go("address/"+addr);s.onkeydown=e=>{if(e.key==="Enter")s.onclick()};l.appendChild(s);l.appendChild(copyBtn(addr,"Adresi kopyala"));l.appendChild(walletBtn(addr,()=>get("/address/"+addr).then(walletSt)))}else l.appendChild(s);
   d.appendChild(l);if(val!=null)d.appendChild(el("span",cls,sign+btc(val)));return d}
 function tag(text,color){const t=el("span","tag",text);t.style.background=color;return t}
 const BS="https://blockstream.info/api";let ALT=false;
@@ -346,11 +346,13 @@ async function pollTracked(){
 // cüzdan takibi: adreste yeni hareket olunca bildirim
 const walletSt=i=>{const c=i.chain_stats,m=i.mempool_stats;return{n:c.tx_count+m.tx_count,b:c.funded_txo_sum-c.spent_txo_sum+m.funded_txo_sum-m.spent_txo_sum}};
 const isWal=id=>WTRK.some(x=>x.id===id);
-function walletBtn(id,cur){const b=el("button","cp wt"+(isWal(id)?" on":""));b.type="button";b.setAttribute("aria-label","Cüzdanı takip et / bırak");b.title="Cüzdanı takip et";b.innerHTML=ICONS.wallet;
+function walletBtn(id,cur){const b=el("button","cp wt"+(isWal(id)?" on":""));b.type="button";b.setAttribute("aria-label","Cüzdanı takip et / bırak");b.title="Cüzdanı takip et";b.dataset.a=id;b.innerHTML=ICONS.wallet;
   b.onclick=async e=>{e.preventDefault();e.stopPropagation();const i=WTRK.findIndex(x=>x.id===id);let v;
     if(i>=0){WTRK.splice(i,1);v=false}
-    else{if(WTRK.length>=10){toast("En fazla 10 cüzdan takip edilir");return}WTRK.unshift({id,n:cur.n,b:cur.b});v=true;await askNotif()}
-    save("wtrk",WTRK);b.classList.toggle("on",v);toast(v?"Cüzdan takipte: yeni hareket olunca bildirim gelir":"Cüzdan takibi bırakıldı")};return b}
+    else{if(WTRK.length>=10){toast("En fazla 10 cüzdan takip edilir");return}
+      let c=cur;if(typeof cur==="function"){try{c=await cur()}catch(_){toast("Adres bilgisi alınamadı");return}}
+      if(isWal(id))return;WTRK.unshift({id,n:c.n,b:c.b});v=true;await askNotif()}
+    save("wtrk",WTRK);document.querySelectorAll(".wt").forEach(x=>{if(x.dataset.a===id)x.classList.toggle("on",v)});toast(v?"Cüzdan takipte: yeni hareket olunca bildirim gelir":"Cüzdan takibi bırakıldı")};return b}
 let wbusy=false;
 async function pollWallets(){if(wbusy||!WTRK.length)return;wbusy=true;let ch=false;
   try{for(const w of WTRK.slice()){try{const s=walletSt(await get("/address/"+w.id));
