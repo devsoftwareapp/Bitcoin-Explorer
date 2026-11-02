@@ -1,6 +1,6 @@
 # Bitcoin Explorer
 
-Sade, Türkçe Bitcoin explorer. Veri kaynağı: mempool.space herkese açık API'si (anahtarsız).
+Sade, Türkçe Bitcoin explorer. Veri kaynağı: bekleyen işlem.space herkese açık API'si (anahtarsız).
 
 ## APK alma
 Her `main` push'unda GitHub Actions debug APK üretir:
@@ -15,7 +15,7 @@ Web arayüzü `www/` klasöründedir.
 
 ## Özellikler
 - Renkli, koyu/açık tema uyumlu arayüz
-- Mempool haritası (sıradaki bloklar, ücrete göre renkli)
+- Bekleyen blok haritası (sıradaki bloklar, ücrete göre renkli)
 - Son bloklar (doluluk seviyesi + ücret rengi), havuz dağılımı
 - Hashrate grafiği, zorluk ayarı, halving sayacı
 - Adres / işlem / blok detayları, giriş-çıkış listesi
@@ -33,3 +33,7 @@ Web arayüzü `www/` klasöründedir.
 Actions → "Android Release APK (imzali)". Kalıcı imza için repo secret'ları: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`.
 Secret yoksa geçici anahtarla imzalanır (her sürümde farklı, güncelleme olarak kurulmaz).
 Not: Takip bildirimleri uygulama açıkken/arka planda canlıyken çalışır; Android uygulamayı tamamen uyutursa bildirim gecikebilir.
+
+## v1.2
+- Sol üstte yan menü (Ana sayfa, Favoriler, Takip, Son aramalar, Ayarlar, Hakkında)
+- Sistem geri hareketi (soldan kaydırma) uygulama içinde bir önceki sayfaya döner

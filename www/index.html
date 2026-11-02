@@ -100,12 +100,23 @@ svg.chart{width:100%;height:110px;display:block}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .cp{min-width:36px;height:36px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.dov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:25;animation:fade .2s}
+.dov.out{opacity:0;transition:opacity .18s}
+.dpanel{position:absolute;left:0;top:0;bottom:0;width:min(82vw,320px);background:var(--card);padding:calc(18px + env(safe-area-inset-top,0px)) 12px calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:4px;overflow:auto;box-shadow:8px 0 30px rgba(0,0,0,.35);animation:dslide .22s}
+.dov.out .dpanel{transform:translateX(-100%);transition:transform .18s}
+@keyframes dslide{from{transform:translateX(-100%)}}
+.dhd{display:flex;align-items:center;gap:12px;padding:4px 8px 16px}.dhd b{font-size:17px;display:block}
+.ditem{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:transparent;color:var(--text);box-shadow:none;border-radius:14px;padding:13px 12px;font-size:15px;font-weight:600}
+.ditem svg{width:22px;height:22px}.ditem.on{background:var(--card2);color:var(--accent)}.ditem .dl{flex:1}
+.dn{background:var(--bg2);border:1px solid var(--line);border-radius:99px;padding:1px 9px;font-size:12px;color:var(--muted)}
+.dsep{height:1px;background:var(--line);margin:8px 6px}
 </style>
+
 
 </head>
 <body>
 <main>
-  <header><div id="title" class="brand" role="button" tabindex="0" aria-label="Ana sayfa"><div class="logo">₿</div><h1>Bitcoin <span>Explorer</span></h1></div><div class="live"><i class="dot"></i><span id="upd">canlı</span><button id="set" class="ib" type="button" aria-label="Ayarlar"></button></div></header>
+  <header><button id="menu" class="ib" type="button" aria-label="Menüyü aç" aria-haspopup="true"></button><div id="title" class="brand" role="button" tabindex="0" aria-label="Ana sayfa"><div class="logo">₿</div><h1>Bitcoin <span>Explorer</span></h1></div><div class="live"><i class="dot"></i><span id="upd">canlı</span></div></header>
   <div class="search">
     <input id="q" placeholder="Adres, işlem ID veya blok no" aria-label="Adres, işlem ID veya blok numarası" autocapitalize="off" autocomplete="off" spellcheck="false">
     <button id="go" aria-label="Ara">Ara</button>
@@ -309,7 +320,7 @@ async function share(title,url){const S=window.Capacitor&&Capacitor.Plugins&&Cap
   catch(e){if(e&&/cancel|abort/i.test((e.name||"")+(e.message||"")))return}
   await copyText(url);toast("Bağlantı kopyalandı")}
 const shareBtn=(title,url)=>ib("share","Paylaş",()=>share(title,url));
-const EX="https://mempool.space/";
+const EX="https://blockstream.info/";
 // bildirimler
 const LN=()=>window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.LocalNotifications;
 async function askNotif(){const l=LN();try{if(l){const r=await l.checkPermissions();if(r.display!=="granted")await l.requestPermissions();
@@ -336,7 +347,7 @@ function openSheet(title,...n){closeSheet();const ov=el("div","ov"),p=el("div","
 function seg(opts,val,on){const d=el("div","seg");opts.forEach(([v,l])=>{const b=el("button",v===val?"on":null,l);b.type="button";b.onclick=()=>{on(v);[...d.children].forEach(x=>x.classList.toggle("on",x===b))};d.appendChild(b)});return d}
 function settings(){
   const grp=(t,opts,key,after)=>{const w=el("div","grp");w.appendChild(el("div","lbl",t));w.appendChild(seg(opts,CFG[key],v=>{CFG[key]=v;save("cfg",CFG);after()}));return w};
-  const info=el("div","muted");info.textContent="Veri: mempool.space (kesintide Blockstream yedeği). Sürüm 1.1";
+  const info=el("div","muted");info.textContent="Veri: genel Bitcoin ağı API'leri (yedek kaynaklı). Sürüm 1.2";
   const clr=el("button","more","Yerel verileri sil (favori, geçmiş, takip)");clr.type="button";
   clr.onclick=()=>{FAV.length=REC.length=TRK.length=0;["fav","rec","trk"].forEach(k=>save(k,[]));toast("Silindi");if(view==="home")home()};
   openSheet("Ayarlar",grp("Tema",[["system","Sistem"],["light","Açık"],["dark","Koyu"]],"theme",applyTheme),
@@ -380,6 +391,39 @@ function homeLists(){const n=[];
     const b=el("button","more","Geçmişi temizle");b.type="button";b.onclick=()=>{REC.length=0;save("rec",REC);home()};c.appendChild(b);n.push(c)}
   return n}
 
+// ---- yan menü, geri hareketi
+ICONS.menu=IC+'<path d="M4 6h16M4 12h16M4 18h16"/></svg>';
+ICONS.home=IC+'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>';
+ICONS.clock=IC+'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+ICONS.info=IC+'<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/></svg>';
+let drawer=null;
+function closeDrawer(){if(drawer){const d=drawer;drawer=null;d.classList.add("out");setTimeout(()=>d.remove(),180)}}
+function about(){const l=el("div","muted");l.textContent="Bitcoin Explorer 1.2. İşlem, adres ve blok görüntüleyici. Cüzdan değildir; anahtar veya bakiye saklamaz. Veriler genel Bitcoin ağı API'lerinden gelir, kesintide yedek kaynağa geçilir.";openSheet("Hakkında",l)}
+function openDrawer(){
+  closeSheet();if(drawer)return;
+  const ov=el("div","dov"),p=el("nav","dpanel");p.setAttribute("aria-label","Ana menü");
+  ov.onclick=e=>{if(e.target===ov)closeDrawer()};
+  const hd=el("div","dhd");hd.appendChild(el("div","logo","₿"));
+  const tt=el("div");tt.appendChild(el("b",null,"Bitcoin Explorer"));tt.appendChild(el("small","muted","Sürüm 1.2"));hd.appendChild(tt);p.appendChild(hd);
+  const cur=location.hash.slice(2).split("/")[0];
+  const it=(icon,label,key,fn,n)=>{const b=el("button","ditem"+(key===cur?" on":""));b.type="button";const s=el("span");s.innerHTML=ICONS[icon];b.appendChild(s);b.appendChild(el("span","dl",label));
+    if(n)b.appendChild(el("span","dn",String(n)));b.onclick=()=>{closeDrawer();fn()};p.appendChild(b)};
+  it("home","Ana sayfa","",()=>go(""));
+  it("star","Favoriler","favs",()=>go("favs"),FAV.length);
+  it("bell","Takip edilen işlemler","tracked",()=>go("tracked"),TRK.length);
+  it("clock","Son aramalar","recent",()=>go("recent"),REC.length);
+  p.appendChild(el("div","dsep"));
+  it("set","Ayarlar","_",settings);
+  it("info","Hakkında","_",about);
+  ov.appendChild(p);document.body.appendChild(ov);drawer=ov;
+  let sx=0;p.addEventListener("touchstart",e=>{sx=e.touches[0].clientX},{passive:true});
+  p.addEventListener("touchend",e=>{if(sx-e.changedTouches[0].clientX>60)closeDrawer()},{passive:true})}
+function listPage(title,items,empty,extra){view="detail";const c=card(title);if(!items.length)c.appendChild(el("div","muted",empty));
+  items.forEach(x=>c.appendChild(itemRow(x,extra&&extra(x))));withBack(c)}
+// tek hareketle geri: menü > alt sayfa > önceki sayfa > ana sayfa
+function goBack(){if(drawer){closeDrawer();return true}if(sheet){closeSheet();return true}
+  if(history.state&&history.state.i>0){history.back();return true}if(view!=="home"){go("");return true}return false}
+
 async function home(force){
   view="home";
   if(force||!out.firstChild)skeleton();
@@ -421,12 +465,12 @@ async function home(force){
     const x=el("div","tile");x.style.background=fc(v);
 x.appendChild(el("b",null,v!=null?v:"—"));x.appendChild(el("small",null,n));g.appendChild(x)});
   fcard.appendChild(g);
-  if(d.mempool){fcard.appendChild(row("Bekleyen işlem",nf(d.mempool.count)));fcard.appendChild(row("Mempool boyutu",(d.mempool.vsize/1e6).toFixed(2)+" MvB"))}
+  if(d.mempool){fcard.appendChild(row("Bekleyen işlem",nf(d.mempool.count)));fcard.appendChild(row("Bekleyen boyut",(d.mempool.vsize/1e6).toFixed(2)+" MvB"))}
   nodes.push(fcard);
 
   // Mempool harita
   if(d.mblocks&&d.mblocks.length){
-    const mc=card("Mempool — sıradaki bloklar");const sc=el("div","scroll");
+    const mc=card("Sıradaki bloklar");const sc=el("div","scroll");
     d.mblocks.slice(0,8).forEach((b,i)=>{
       const k=el("div","cube");k.style.background=fc(b.medianFee);
       k.appendChild(el("b",null,"~"+Math.round(b.medianFee)+" sat/vB"));
@@ -572,7 +616,7 @@ async function tx(id){
     if(!/404/.test(e.message))throw e;
     const c=card("İşlem");c.appendChild(idrow(id,"İşlem ID'sini kopyala"));
     const r=el("div","row");r.appendChild(el("span",null,"Durum"));r.appendChild(badge("bad","Bulunamadı"));c.appendChild(r);
-    c.appendChild(el("div","muted","Bu ID ağda görünmüyor. İşlem reddedilmiş, mempool'dan düşmüş ya da henüz yayılmamış olabilir."));
+    c.appendChild(el("div","muted","Bu ID ağda görünmüyor. İşlem reddedilmiş, ağdan düşmüş ya da henüz yayılmamış olabilir."));
     withBack(c);return}
   await ensurePrice();pushRec("tx",id);
   const total=t.vout.reduce((s,o)=>s+o.value,0),rate=t.fee/(t.weight?t.weight/4:t.size);
@@ -601,7 +645,7 @@ async function tx(id){
 // ---- yönlendirme: geri tuşu / kenardan kaydırma tarayıcı geçmişiyle çalışır
 let idx=0,rid=0;const scrolls={};
 history.replaceState({i:0},"");
-function go(p){closeSheet();const same=p===""?(!location.hash||location.hash==="#/"):location.hash==="#/"+p;
+function go(p){closeSheet();closeDrawer();const same=p===""?(!location.hash||location.hash==="#/"):location.hash==="#/"+p;
   if(same){route();return}
   scrolls[idx]=window.scrollY;history.pushState({i:++idx},"",p===""?location.pathname+location.search:"#/"+p);route()}
 async function route(){
@@ -610,14 +654,17 @@ async function route(){
     if(k==="tx"){view="detail";$("q").value=a;skeleton();await tx(a)}
     else if(k==="address"){view="detail";$("q").value=a;skeleton();await address(a)}
     else if(k==="block"){await block(a)}
+    else if(k==="favs"){$("q").value="";listPage("Favoriler",FAV,"Henüz favori yok. Adres, işlem veya blok sayfasında yıldıza dokun.")}
+    else if(k==="tracked"){$("q").value="";listPage("Takip edilen işlemler",TRK.map(x=>({t:"tx",id:x.id,st:x.st})),"Takip edilen işlem yok. Bekleyen bir işlemin sayfasında zil simgesine dokun.",x=>x.st>0?badge("ok","Onaylı"):badge("wait","Bekliyor"))}
+    else if(k==="recent"){$("q").value="";listPage("Son aramalar",REC,"Henüz arama yok.")}
     else{$("q").value="";await home(true)}
   }catch(e){if(my===rid)withBack(msg("Sonuç alınamadı ("+errText(e)+"). Adresi kontrol et veya biraz sonra tekrar dene.",true))}
   window.scrollTo(0,y);
 }
-addEventListener("popstate",e=>{closeSheet();idx=(e.state&&e.state.i)||0;route()});
-if(/android/i.test(navigator.userAgent)){let sx=0,sy=0,ok=false;
+addEventListener("popstate",e=>{closeSheet();closeDrawer();idx=(e.state&&e.state.i)||0;route()});
+if(!(window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App)&&/android/i.test(navigator.userAgent)){let sx=0,sy=0,ok=false;
   addEventListener("touchstart",e=>{const t=e.touches[0];sx=t.clientX;sy=t.clientY;ok=sx<24},{passive:true});
-  addEventListener("touchend",e=>{if(!ok)return;ok=false;const t=e.changedTouches[0];if(t.clientX-sx>70&&Math.abs(t.clientY-sy)<60&&history.state&&history.state.i>0)history.back()},{passive:true})}
+  addEventListener("touchend",e=>{if(!ok)return;ok=false;const t=e.changedTouches[0];if(t.clientX-sx>70&&Math.abs(t.clientY-sy)<60)goBack()},{passive:true})}
 
 async function search(){
   const q=$("q").value.trim();
@@ -642,8 +689,9 @@ addEventListener("online",()=>{$("net").classList.remove("on");route()});
   addEventListener("touchstart",e=>{const t=e.touches[0];pull=window.scrollY<=0&&t.clientX>=24&&!sheet;py=t.clientY},{passive:true});
   addEventListener("touchmove",e=>{if(!pull)return;const d=e.touches[0].clientY-py;if(d>0&&window.scrollY<=0){ptr.style.opacity=Math.min(1,d/90);ptr.style.transform="translate(-50%,"+Math.min(d/2,50)+"px)";ptr.textContent=d>90?"Bırak: yenile":"Yenilemek için çek"}},{passive:true});
   addEventListener("touchend",e=>{if(!pull)return;pull=false;const d=e.changedTouches[0].clientY-py;ptr.style.opacity=0;ptr.style.transform="translate(-50%,0)";if(d>90&&window.scrollY<=0){toast("Yenileniyor");route()}},{passive:true})}
-$("set").innerHTML=ICONS.set;$("set").onclick=settings;
+$("menu").innerHTML=ICONS.menu;$("menu").onclick=openDrawer;
 $("title").onkeydown=e=>{if(e.key==="Enter")go("")};
+{const AP=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App;if(AP&&AP.addListener)AP.addListener("backButton",()=>{if(!goBack())AP.exitApp()})}
 setInterval(()=>{if(!document.hidden)pollTracked()},45000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)pollTracked()});
 ensurePrice();pollTracked();
