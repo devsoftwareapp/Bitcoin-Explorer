@@ -619,7 +619,7 @@ function txItem(tx,addr){
   const a=el("a","tx");a.href="#";
   a.onclick=e=>{e.preventDefault();go("tx/"+tx.txid)};
   const w=el("div"),top=el("div","row");
-  if(addr){const n=net(tx,addr);top.appendChild(el("span",n>=0?"in":"out",(n>=0?"+":"−")+btc(n)+U()))}
+  if(addr){const n=net(tx,addr);top.appendChild(el("span",n>=0?"in":"out",(n>=0?"+":"−")+btc(Math.abs(n))+U()))}
   else top.appendChild(el("span",null,btc(tx.vout.reduce((s,o)=>s+o.value,0))+U()));
   top.appendChild(tx.status&&tx.status.confirmed?badge("ok","Confirmed"):badge("wait","Pending"));
   w.appendChild(top);if(tx.status&&tx.status.confirmed)w.appendChild(el("div","muted",when(tx)));w.appendChild(el("div","mono",tx.txid));
@@ -651,7 +651,7 @@ async function address(a){
   const [info,txs]=await Promise.all([get("/address/"+a),get("/address/"+a+"/txs"),ensurePrice()]);
   pushRec("address",a);
   const cs=info.chain_stats,ms=info.mempool_stats,bal=cs.funded_txo_sum-cs.spent_txo_sum;
-  const c1=card("Adres","hero");
+  const c1=card("Address","hero");
   const ir=idrow(a,"Copy address");ir.firstChild.style.color=ir.lastChild.style.color="rgba(255,255,255,.85)";ir.appendChild(walletBtn(a,walletSt(info)));c1.appendChild(ir);
   c1.appendChild(el("div","big",btc(bal)+U()));
   const f=fiat(bal);if(f)c1.appendChild(el("div","muted","≈ "+f));
