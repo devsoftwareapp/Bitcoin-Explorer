@@ -111,6 +111,11 @@ svg.chart{width:100%;height:110px;display:block}
 .ditem svg{width:22px;height:22px}.ditem.on{background:var(--card2);color:var(--accent)}.ditem .dl{flex:1}
 .dn{background:var(--bg2);border:1px solid var(--line);border-radius:99px;padding:1px 9px;font-size:12px;color:var(--muted)}
 .dsep{height:1px;background:var(--line);margin:8px 6px}
+.sc{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.sct{position:relative;display:flex;align-items:center;gap:10px;min-width:0;padding:10px 12px;border-radius:16px;background:linear-gradient(160deg,var(--card),var(--card2));border:1px solid var(--line);color:var(--text);box-shadow:none;font-size:14px;font-weight:600;text-align:left;animation:up .4s both}
+.sci{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:var(--bg2);color:var(--accent);flex:none}.sci svg{width:18px;height:18px}
+.scl{min-width:0;line-height:1.2}
+.scn{position:absolute;top:-6px;right:-4px;min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:linear-gradient(135deg,#ffb347,#f7931a);color:#1a1200;font-size:11px;font-weight:800;display:grid;place-items:center}
 .pgh{margin:2px 0 20px}.pg{display:flex;justify-content:center;flex-wrap:wrap;gap:5px}
 .pgb{min-width:36px;height:40px;padding:0 6px;border-radius:14px;background:var(--card);color:var(--text);border:1px solid var(--line);box-shadow:none;font-weight:700;font-size:15px}
 .pgb.on{background:linear-gradient(135deg,#ffb347,#f7931a);color:#1a1200;border-color:transparent;box-shadow:var(--glow)}
@@ -406,13 +411,13 @@ const TL={tx:"İşlem",address:"Adres",block:"Blok"};
 function itemRow(it,extra){const r=el("div","row"),l=el("div");r.style.cursor="pointer";r.setAttribute("role","button");r.tabIndex=0;
   l.appendChild(el("div","mono",short(it.id,10,8)));l.appendChild(el("small","muted",TL[it.t]));r.appendChild(l);if(extra)r.appendChild(extra);
   const f=()=>go(it.t+"/"+it.id);r.onclick=f;r.onkeydown=e=>{if(e.key==="Enter")f()};return r}
-function homeLists(){const n=[];
-  if(TRK.length){const c=card("Takip edilen işlemler");TRK.slice(0,5).forEach(x=>c.appendChild(itemRow({t:"tx",id:x.id},x.st>0?badge("ok","Onaylı"):badge("wait","Bekliyor"))));n.push(c)}
-  if(WTRK.length){const c=card("Takip edilen cüzdanlar");WTRK.slice(0,5).forEach(x=>c.appendChild(itemRow({t:"address",id:x.id},el("span","in",btc(x.b)+U()))));n.push(c)}
-  if(FAV.length){const c=card("Favoriler");FAV.slice(0,8).forEach(x=>c.appendChild(itemRow(x)));n.push(c)}
-  if(REC.length){const c=card("Son aramalar");REC.slice(0,6).forEach(x=>c.appendChild(itemRow(x)));
-    const b=el("button","more","Geçmişi temizle");b.type="button";b.onclick=()=>{REC.length=0;save("rec",REC);home()};c.appendChild(b);n.push(c)}
-  return n}
+// ana sayfa kısayolları (yan menüdeki sayfalarla aynı)
+function shortcuts(){const g=el("div","sc");
+  [["star","Favoriler","favs",FAV.length],["bell","İşlem takibi","tracked",TRK.length],["wallet","Cüzdan takibi","wallets",WTRK.length],["clock","Son aramalar","recent",REC.length]].forEach(([ic,l,k,n])=>{
+    const b=el("button","sct");b.type="button";b.setAttribute("aria-label",l+(n?" ("+n+")":""));
+    const sp=el("span","sci");sp.innerHTML=ICONS[ic];b.appendChild(sp);b.appendChild(el("span","scl",l));
+    if(n)b.appendChild(el("span","scn",String(n)));b.onclick=()=>go(k);g.appendChild(b)});
+  return g}
 
 // ---- yan menü, geri hareketi
 ICONS.menu=IC+'<path d="M4 6h16M4 12h16M4 18h16"/></svg>';
@@ -510,7 +515,7 @@ async function home(force){
   if(d.price){const ch=el("div","chips");
     ch.appendChild(el("span","chip","1 USD = "+nf(1e8/d.price.USD)+" sat"));
     hero.appendChild(ch)}
-  nodes.push(hero);homeLists().forEach(x=>nodes.push(x));
+  nodes.push(shortcuts(),hero);
 
   // Ücretler
   const fcard=card("Ücret tahmini (sat/vB)");const g=el("div","grid");
